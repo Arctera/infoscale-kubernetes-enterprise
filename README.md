@@ -41,7 +41,6 @@ With OpenShift Virtualization, IKE provides:
 - Enables low-latency, high-performance, software-defined storage pools.
 
 ### 3. App-Level High Availability (HA)
-- Cluster Server (VCS) agents integrate with K8s probes.
 - Monitors container health and application processes.
 - Supports automatic failover or container restart.
 
