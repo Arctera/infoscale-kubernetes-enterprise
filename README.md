@@ -1,1 +1,1 @@
-# InfoScale-Enterprise-for-Kubernetes
+# InfoScale Enterprise for Kubernetes
