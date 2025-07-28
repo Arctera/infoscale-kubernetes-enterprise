@@ -93,7 +93,7 @@ With OpenShift Virtualization, IKE provides:
 
 ##  Deployment Methods
 
-- Helm Charts
+- Helm Charts (Draft)
 - InfoScale Operators (OpenShift-certified)
 - YAML manifests (manual method)
 
