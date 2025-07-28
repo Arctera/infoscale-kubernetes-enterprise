@@ -2,13 +2,13 @@
 
 ##  Overview
 
-**VIKE (Veritas InfoScale for Kubernetes Enterprise Edition)** brings Veritas’ enterprise-grade storage, high availability, and disaster recovery (DR) features into the Kubernetes ecosystem.
+**IKE (InfoScale for Kubernetes Enterprise Edition)** brings ’ enterprise-grade storage, high availability, and disaster recovery (DR) features into the Kubernetes ecosystem.
 
 It is designed for running **stateful workloads** in Kubernetes with enterprise-grade **performance, resiliency, and manageability**.
 
-VIKE also supports **OpenShift Virtualization**, enabling unified management and high availability of both **containerized** and **virtual machine (VM)** workloads.
+IKE also supports **OpenShift Virtualization**, enabling unified management and high availability of both **containerized** and **virtual machine (VM)** workloads.
 
-With OpenShift Virtualization, VIKE provides:
+With OpenShift Virtualization, IKE provides:
 - Shared block storage and HA for VMs similar to containers.
 - Disaster recovery across clusters for VMs.
 - Unified CSI-based storage for Pods and VMs.
@@ -24,7 +24,7 @@ With OpenShift Virtualization, VIKE provides:
 | **CSI Driver**            | Allows Kubernetes to manage InfoScale volumes as persistent volumes |
 | **FSS (Flexible Storage Sharing)** | Lets worker nodes share their local storage with other nodes          |
 | **DR Manager**            | Coordinates DR replication and failover across clusters             |
-| **VVR (Veritas Volume Replicator)** | Performs async/sync volume replication for DR                    |
+| **VVR (Volume Replicator)** | Performs async/sync volume replication for DR                    |
 | **Metrics Exporter**      | Pushes InfoScale metrics to Prometheus for observability            |
 
 ---
@@ -41,7 +41,7 @@ With OpenShift Virtualization, VIKE provides:
 - Enables low-latency, high-performance, software-defined storage pools.
 
 ### 3. App-Level High Availability (HA)
-- Veritas Cluster Server (VCS) agents integrate with K8s probes.
+- Cluster Server (VCS) agents integrate with K8s probes.
 - Monitors container health and application processes.
 - Supports automatic failover or container restart.
 
@@ -66,7 +66,7 @@ With OpenShift Virtualization, VIKE provides:
 
 ##  Example Use Cases
 
-### VIKE also supports virtualized workloads using OpenShift Virtualization:
+### IKE also supports virtualized workloads using OpenShift Virtualization:
 
 - **VM Workload HA**: Automatically failover VMs managed via OpenShift Virtualization.
 - **VM Storage Replication**: Use VVR to replicate VM data volumes between clusters.
@@ -94,11 +94,11 @@ With OpenShift Virtualization, VIKE provides:
 ##  Deployment Methods
 
 - Helm Charts
-- Veritas Operator (OpenShift-certified)
+- InfoScale Operators (OpenShift-certified)
 - YAML manifests (manual method)
 
 ---
 
 ##  Summary
 
-Veritas InfoScale for Kubernetes (VIKE) extends Kubernetes into an enterprise-grade platform for **storage, HA, DR**, and **observability** — optimized for critical stateful applications, **virtual machines**, and hybrid/multi-cloud environments.
+Arctera InfoScale for Kubernetes (IKE) extends Kubernetes into an enterprise-grade platform for **storage, HA, DR**, and **observability** — optimized for critical stateful applications, **virtual machines**, and hybrid/multi-cloud environments.
