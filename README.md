@@ -1,33 +1,35 @@
-# InfoScale Enterprise for Kubernetes
-from pathlib import Path
+# InfoScale for Kubernetes Enterprise (IKE)
 
-# Define the markdown content
-markdown_content = """
-# Veritas InfoScale for Kubernetes Enterprise (VIKE)
-
-## 🔍 Overview
+##  Overview
 
 **VIKE (Veritas InfoScale for Kubernetes Enterprise Edition)** brings Veritas’ enterprise-grade storage, high availability, and disaster recovery (DR) features into the Kubernetes ecosystem.
 
 It is designed for running **stateful workloads** in Kubernetes with enterprise-grade **performance, resiliency, and manageability**.
 
+VIKE also supports **OpenShift Virtualization**, enabling unified management and high availability of both **containerized** and **virtual machine (VM)** workloads.
+
+With OpenShift Virtualization, VIKE provides:
+- Shared block storage and HA for VMs similar to containers.
+- Disaster recovery across clusters for VMs.
+- Unified CSI-based storage for Pods and VMs.
+- Monitoring and management using the same InfoScale tools.
+
 ---
 
-## 🧩 Core Components in Kubernetes
+##  Core Components in Kubernetes
 
 | Component                  | Role in Kubernetes Cluster                                          |
 |---------------------------|----------------------------------------------------------------------|
+| **Operator**              | Manages deployment, upgrades, and configuration of InfoScale on K8s |
 | **CSI Driver**            | Allows Kubernetes to manage InfoScale volumes as persistent volumes |
 | **FSS (Flexible Storage Sharing)** | Lets worker nodes share their local storage with other nodes          |
-| **VCS Agents (HA agents)** | Monitor and manage app availability (sidecar model or integrated)   |
 | **DR Manager**            | Coordinates DR replication and failover across clusters             |
 | **VVR (Veritas Volume Replicator)** | Performs async/sync volume replication for DR                    |
-| **Operator**              | Manages deployment, upgrades, and configuration of InfoScale on K8s |
 | **Metrics Exporter**      | Pushes InfoScale metrics to Prometheus for observability            |
 
 ---
 
-## 🚀 Key Kubernetes-Centric Features
+##  Key Kubernetes-Centric Features
 
 ### 1. CSI-Based Persistent Storage
 - CSI driver enables Kubernetes-native access to InfoScale-managed volumes.
@@ -62,7 +64,13 @@ It is designed for running **stateful workloads** in Kubernetes with enterprise-
 
 ---
 
-## 🧠 Example Use Cases
+##  Example Use Cases
+
+### VIKE also supports virtualized workloads using OpenShift Virtualization:
+
+- **VM Workload HA**: Automatically failover VMs managed via OpenShift Virtualization.
+- **VM Storage Replication**: Use VVR to replicate VM data volumes between clusters.
+- **Hybrid App Models**: Run VMs and containers in the same namespace with shared storage and DR.
 
 | Use Case                              | Description                                                                 |
 |--------------------------------------|-----------------------------------------------------------------------------|
@@ -74,7 +82,7 @@ It is designed for running **stateful workloads** in Kubernetes with enterprise-
 
 ---
 
-## ✅ Certified Environments
+##  Certified Environments
 
 - Red Hat OpenShift 4.x (OperatorHub Certified)
 - Kubernetes (upstream) v1.23+
@@ -83,7 +91,7 @@ It is designed for running **stateful workloads** in Kubernetes with enterprise-
 
 ---
 
-## 🔧 Deployment Methods
+##  Deployment Methods
 
 - Helm Charts
 - Veritas Operator (OpenShift-certified)
@@ -91,16 +99,6 @@ It is designed for running **stateful workloads** in Kubernetes with enterprise-
 
 ---
 
-## 📌 Summary
+##  Summary
 
-Veritas InfoScale for Kubernetes (VIKE) extends Kubernetes into an enterprise-grade platform for **storage, HA, DR**, and **observability** — optimized for critical stateful applications and hybrid/multi-cloud environments.
-"""
-
-# Define the file path
-file_path = Path("/mnt/data/VIKE_InfoScale_K8s_Readme.md")
-
-# Write to file
-file_path.write_text(markdown_content)
-
-# Return the file path
-file_path
+Veritas InfoScale for Kubernetes (VIKE) extends Kubernetes into an enterprise-grade platform for **storage, HA, DR**, and **observability** — optimized for critical stateful applications, **virtual machines**, and hybrid/multi-cloud environments.
