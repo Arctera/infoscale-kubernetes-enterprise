@@ -2,7 +2,7 @@
 
 ##  Overview
 
-**IKE (InfoScale for Kubernetes Enterprise Edition)** brings ’ enterprise-grade storage, high availability, and disaster recovery (DR) features into the Kubernetes ecosystem.
+**IKE (InfoScale for Kubernetes Enterprise Edition)** brings enterprise-grade storage, high availability, and disaster recovery (DR) features into the Kubernetes ecosystem.
 
 It is designed for running **stateful workloads** in Kubernetes with enterprise-grade **performance, resiliency, and manageability**.
 
