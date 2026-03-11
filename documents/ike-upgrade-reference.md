@@ -405,13 +405,13 @@ watch oc get no
 
 ```
 NAME                      STATUS                     ROLES                  AGE   VERSION
-ocp348-m1.eng.internal    Ready                      control-plane,master   41d   v1.30.7
-ocp348-m2.eng.internal    Ready                      control-plane,master   41d   v1.30.7
-ocp348-m3.eng.internal    Ready                      control-plane,master   41d   v1.30.7
-ocp348-w01.eng.internal   Ready                      worker                 41d   v1.30.7
-ocp348-w02.eng.internal   Ready                      worker                 41d   v1.30.7
-ocp348-w03.eng.internal   Ready                      worker                 41d   v1.30.7
-ocp348-w04.eng.internal   Ready,SchedulingDisabled   worker                 41d   v1.30.7
+ocp348-m1.test.int        Ready                      control-plane,master   41d   v1.30.7
+ocp348-m2.test.int        Ready                      control-plane,master   41d   v1.30.7
+ocp348-m3.test.int        Ready                      control-plane,master   41d   v1.30.7
+ocp348-w01.test.int       Ready                      worker                 41d   v1.30.7
+ocp348-w02.test.int       Ready                      worker                 41d   v1.30.7
+ocp348-w03.test.int       Ready                      worker                 41d   v1.30.7
+ocp348-w04.test.int       Ready,SchedulingDisabled   worker                 41d   v1.30.7
 ```
 
 ### Step 5: Wait for Rollout and InfoScaleCluster to be Ready
@@ -571,3 +571,4 @@ infoscalecluster.infoscale.veritas.com/infoscalecluster-dev annotated
 | 8.0.410 | 4.14.x - 4.17.x | Intermediate upgrade version |
 | 9.1.0 | 4.14.x - 4.18.x | Requires kubelet configuration |
 | 9.1.2 | 4.14.x - 4.20.x | Latest supported version |
+
