@@ -1,0 +1,12 @@
+---
+ apiVersion: machineconfiguration.openshift.io/v1
+ kind: KubeletConfig
+ metadata:
+   name: custom-kubelet-config
+ spec:
+   machineConfigPoolSelector:
+     matchLabels:
+       machineconfiguration.openshift.io/role: worker
+   kubeletConfig:
+     shutdownGracePeriod: "15m"
+     shutdownGracePeriodCriticalPods: "5m"
