@@ -6,7 +6,7 @@
 2. [Pre-requisites](#pre-requisites)
    - [Run the Pre-flight CLI](#run-the-pre-flight-cli)
    - [Stale Snapshot Cleanup (8.x → 9.x only)](#stale-snapshot-cleanup-8x--9x-only)
-   - [SCSI Key Validation (OCP-V VIKE only)](#scsi-reservation-key-validation-ocp-v-vike-only)
+   - [SCSI Reservation Key Validation](#scsi-reservation-key-validation)
    - [Cluster Health Checks](#cluster-health-checks)
 3. [InfoScale Operator Upgrade](#infoscale-operator-upgrade)
 4. [InfoScale Cluster Version Upgrade](#infoscale-cluster-version-upgrade)
@@ -35,7 +35,7 @@ This page describes the **three-phase upgrade sequence** for InfoScale on OpenSh
 > [!IMPORTANT]
 > Complete Phases 1 and 2 **before** upgrading OpenShift, unless the upgrade is explicitly a *combined upgrade* (simultaneous CR version + OCP upgrade). Combined upgrades are outside the scope of this document.
 
-Depending on the source version and any known issues, additional preparatory steps may be required before Phase 1. These are described in the [Pre-requisites](#pre-requisites) section below.
+Depending on the source version and any known issues, additional preparatory steps may be required before Phase 1. These are covered in the [Pre-requisites](#pre-requisites) section below.
 
 ---
 
@@ -44,7 +44,7 @@ Depending on the source version and any known issues, additional preparatory ste
 Verify each of the following before starting any upgrade phase:
 
 - [ ] The platform is stable and responsive — no API server saturation, excessive thrashing, or node resource pressure.
-- [ ] Sufficient resources are available for VM migration if using OCP-V. See [Red Hat OpenShift documentation](https://docs.redhat.com) for sizing guidance.
+- [ ] Sufficient resources are available for VM migration if using OCP-V. See Red Hat OpenShift documentation for sizing guidance.
 - [ ] The InfoScale support matrix has been reviewed for the target OCP version.
 - [ ] No pending rollouts. All configurations are in sync and all worker pools are healthy.
 - [ ] No split-brain conditions exist in the deployed InfoScale cluster.
@@ -52,46 +52,80 @@ Verify each of the following before starting any upgrade phase:
 
 ### Run the Pre-flight CLI
 
-The pre-flight CLI is included in `infoscale-tools-v9.1.2.tar`. Run it and resolve **all** reported issues before proceeding.
+**Location:** `infoscale-tools-v9.1.2/preflight/preflight-cli.sh`
+
+The pre-flight CLI performs multiple readiness checks organized into four rule groups. Run it and resolve **all** reported issues before proceeding.
 
 ```bash
-./preflight-cli.sh --target-ike <infoscale_version> --target-ocp <ocp_version>
+./preflight-cli.sh --target-ike <infoscale_version> [--target-ocp <ocp_version>]
 ```
 
 Example:
 
 ```bash
-./preflight-cli.sh --target-ike 9.1.0 --target-ocp 4.19.x
+./preflight-cli.sh --target-ike 9.1.2 --target-ocp 4.20.x
 ```
+
+A passing run produces a summary like the following:
+
+```text
+========== PRE-FLIGHT SUMMARY ==========
+04-workload-sanity.sh : All checks passed
+03-ike-versions.sh    : All checks passed
+02-sourceclust.sh     : All checks passed
+01-platform.sh        : All checks passed
+========================================
+```
+
+> [!NOTE]
+> If any rule group reports errors or failures:
+> - Do not proceed with the upgrade.
+> - Resolve all reported issues.
+> - Contact the InfoScale support team if you need further assistance.
 
 ### Stale Snapshot Cleanup (8.x → 9.x only)
 
-> [!WARNING]
-> Upgrades from 8.x to 9.x can get stuck with `Resource Busy` if stale snapshot relationships or tags are present inside SDS pods. This causes the SDS operator to repeatedly report `node busy` or an in-progress volume/snapshot sync.
+> [!NOTE]
+> Upgrades from 8.x to 9.x can get stuck with `Resource Busy` if stale snapshot relationships or tags are present inside SDS pods, causing the SDS operator to repeatedly report `node busy` or an in-progress volume/snapshot sync. The pre-flight CLI will flag this if it applies to your cluster.
 
-If the pre-flight CLI reports stale snapshots, clean them up **before proceeding**:
+If stale snapshots are reported, clean them up before proceeding.
 
-```bash
-./snapshot_cleanup.sh
+`snapshot_cleanup.sh` script help:
+
+```text
+Usage:
+
+./snapshot_cleanup.sh -n <namespace> -p <pod_name> [-g <diskgroup>] [-d]
+
+Options:
+
+-n <namespace>: The OpenShift namespace where the pod is located (required).
+
+-p <pod_name>: The name of the InfoScale SDS pod (required).
+
+-g <diskgroup>: Specific disk group to process (optional). If not specified, all disk groups will be processed.
+
+-d: Dry-run mode. Displays the commands that would be executed without performing any actual deletions (optional).
+
+Example:
+
+./snapshot_cleanup.sh -n infoscale-vtas -p infoscale-sds-21432-7820e9290fa0fc26-b9phd -g vrts_kube_dg-1121
 ```
 
-> Script is included in `infoscale-tools-v9.1.2.tar`.
+This script is included in `infoscale-tools-v9.1.2.tar`.
 
-### SCSI Reservation Key Validation (OCP-V VIKE only)
+### SCSI Reservation Key Validation
 
-> [!NOTE]
-> This check applies only to OCP-V VIKE clusters. Skip if you are not running OpenShift Virtualization.
-
-Before triggering an OCP upgrade, verify SCSI registration key counts from inside an SDS pod:
+Before triggering an OCP upgrade, verify the SCSI registration key count from inside an SDS pod:
 
 ```bash
 oc exec -it infoscale-sds-21432-xxxx-xxxx -n infoscale-vtas -- bash
 vxfenadm -s /dev/vx/rdmp/<dmpnodename>
 ```
 
-**Expected key count:**  `number_of_nodes × paths_per_disk`
+**Expected key count:** `number_of_nodes × paths_per_disk`
 
-> Example: 5 nodes × 2 paths = **10 keys**
+For example, a 5-node cluster with 2 paths per disk should show exactly **10 keys**.
 
 <details>
 <summary>Example output (5-node cluster, 2 paths per disk)</summary>
@@ -135,7 +169,7 @@ key[9]:
 
 ### Cluster Health Checks
 
-Run both commands and confirm the expected outputs before proceeding.
+Run both commands and confirm the expected output before proceeding.
 
 **1. Cluster state must be `Running`:**
 
@@ -157,8 +191,7 @@ oc get infoscaleclusters.infoscale.veritas.com <infoscale-cluster-name> \
 
 Expected output: `Healthy`
 
-> [!WARNING]
-> Do not proceed if the cluster is in `Degraded` or any non-`Healthy` state. Investigate and resolve the root cause first.
+Do not proceed if either check shows `Degraded` or any non-healthy state. Resolve the root cause first.
 
 ---
 
@@ -200,49 +233,49 @@ Expected output: `Healthy`
 1. Verify or apply kubelet configuration (see decision guide below)
 2. Apply patch, if upgrading from 8.0.4x
 3. Patch the InfoScaleCluster version to the target
-4. Wait for upgrade to complete
+4. Wait for the upgrade to complete
 5. Unpause machine config pools (if paused in step 1)
-6. Trigger OCP upgrade (separate phase)
+6. Trigger the OCP upgrade (separate phase)
 
 ### Kubelet Configuration Decision Guide
 
-SDS pod lifecycle hooks require specific kubelet shutdown parameters. Use the flow below to determine what — if anything — you need to do.
+SDS pod lifecycle hooks require specific kubelet shutdown parameters. Use the steps below to determine whether any action is needed.
 
-**Step 1 — Check if parameters are already present:**
+**Step 1 — Check if the parameters are already present:**
 
 ```bash
 oc get kubeletconfigs.machineconfiguration.openshift.io -oyaml | grep -i grace
 ```
 
-If you see both lines below, the config exists:
+If both of the following lines appear, the configuration exists:
 
 ```text
 shutdownGracePeriod: 15m
 shutdownGracePeriodCriticalPods: 5m
 ```
 
-**Step 2 — If the config exists, verify it is rolled out** (replace node name with an actual worker):
+**Step 2 — If the config exists, verify it is rolled out** (replace with an actual worker node name):
 
 ```bash
 ssh core@<worker-node> sudo systemd-inhibit
 ```
 
-If the output includes a `kubelet shutdown` inhibitor entry like this, the config is active and **you can skip to [Apply the Required Patch](#apply-the-required-patch-for-source-version-804x)**:
+If the output includes a `kubelet shutdown` inhibitor like the entry below, the configuration is active and **you can skip directly to [Apply the Required Patch](#apply-the-required-patch-for-source-version-804x)**:
 
 ```text
 WHO     COMM     WHAT      WHY                                        MODE
 kubelet kubelet  shutdown  Kubelet needs time to handle node shutdown delay
 ```
 
-**Step 3 — If the config is missing or not rolled out**, follow the option that matches your cluster topology:
+**Step 3 — If the config is missing or not yet rolled out**, choose the option that matches your cluster topology:
 
 | Scenario | Follow |
 |----------|--------|
 | Only worker nodes are schedulable | [Option A](#option-a--workers-only-are-schedulable) |
 | Both workers **and** masters are schedulable, and any master is part of InfoScale | [Option B](#option-b--workers-and-masters-are-schedulable-and-any-master-is-part-of-infoscale) |
 
-> [!WARNING]
-> Do not unpause the machine config pools immediately after applying the configuration. The MCO will roll out changes only when you explicitly unpause. Follow the instructions at [Unpause Machine Config Pools](#unpause-machine-config-pools) at the correct stage.
+> [!NOTE]
+> Machine config pools are paused as part of Options A and B. The MCO applies the configuration only when you explicitly unpause them. Do not unpause until instructed at the [Unpause Machine Config Pools](#unpause-machine-config-pools) step.
 
 ---
 
@@ -269,7 +302,7 @@ oc apply -f https://raw.githubusercontent.com/Arctera/infoscale-kubernetes-enter
 oc apply -f https://raw.githubusercontent.com/Arctera/infoscale-kubernetes-enterprise/main/config/kubelet/kubelet-config.yaml
 ```
 
-**3. Confirm the kubelet config was accepted successfully:**
+**3. Confirm the kubelet config was accepted:**
 
 ```bash
 oc describe kubeletconfigs.machineconfiguration.openshift.io custom-kubelet-config
@@ -373,13 +406,13 @@ Expected output:
 infoscalecluster.infoscale.veritas.com/<cluster-name> patched
 ```
 
-**2. Monitor pod rollout** — CSI, fencing, and toolset components roll out first, then SDS:
+**2. Monitor pod rollout** — CSI, fencing, and toolset components roll out first, followed by SDS:
 
 ```bash
 oc get po -n infoscale-vtas -w
 ```
 
-**3. Monitor cluster status** — the cluster will oscillate between `Degraded` and `Running` as nodes leave and rejoin one at a time. This is expected behavior.
+**3. Monitor cluster status** — the cluster will oscillate between `Degraded` and `Running` as nodes leave and rejoin one at a time. This is expected behavior during the rolling upgrade.
 
 ```bash
 oc get infoscaleclusters -A -w
@@ -403,9 +436,8 @@ Wait until `VERSION` shows `9.1.2`, `STATE` shows `Running`, and `STATUS` shows 
 
 > [!NOTE]
 > Only follow this step if you paused MCPs in [Option A](#option-a--workers-only-are-schedulable) or [Option B](#option-b--workers-and-masters-are-schedulable-and-any-master-is-part-of-infoscale). If you did not pause any pools, skip this section.
-
-> [!WARNING]
-> If you paused both masters and workers (Option B), **unpause masters first** and wait for full rollout before unpausing workers. Unpausing both pools at the same time does not guarantee application availability.
+>
+> If you followed **Option B** (both masters and workers paused), unpause **masters first** and wait for full rollout before unpausing workers. Unpausing both simultaneously does not guarantee application availability.
 
 **Unpause workers** (or masters first if Option B):
 
@@ -422,14 +454,14 @@ oc get no -w
 A node being reconfigured will temporarily show `Ready,SchedulingDisabled`. Wait until all nodes return to `Ready`.
 
 ```text
-NAME                 STATUS                     ROLES                  AGE   VERSION
-ocp348-w04.test.int  Ready,SchedulingDisabled   worker                 41d   v1.30.7   ← rolling
-ocp348-w04.test.int  Ready                      worker                 41d   v1.30.7   ← done
+NAME                 STATUS                     ROLES    AGE   VERSION
+ocp348-w04.test.int  Ready,SchedulingDisabled   worker   41d   v1.30.7   ← rolling
+ocp348-w04.test.int  Ready                      worker   41d   v1.30.7   ← done
 ```
 
-> If a node stays in `NotReady,SchedulingDisabled` for an extended period, try resetting that node.
+If a node remains in `NotReady,SchedulingDisabled` for an extended period, try resetting that node.
 
-Confirm InfoScaleCluster returns to `Healthy` after the rollout:
+Confirm the InfoScaleCluster returns to `Healthy` after the rollout:
 
 ```bash
 oc get infoscaleclusters -Aw
@@ -445,12 +477,12 @@ infoscale-vtas   infoscalecluster-dev   9.1.2     Running   Healthy    121m   �
 
 ## Platform / OCP Upgrade
 
-Trigger the OCP upgrade only after both Phases 1 and 2 above are complete.
+Trigger the OCP upgrade only after Phases 1 and 2 are complete.
 
 > [!NOTE]
-> During a full cluster upgrade, master and worker MCPs roll out **in parallel**. This is a risk if masters are schedulable. IKE recommends upgrading masters first, then workers, to maintain application availability.
+> During a full cluster upgrade, master and worker MCPs roll out **in parallel**. If masters are schedulable, it is recommended to upgrade masters first and then workers to maintain application availability.
 
-Check current version before starting:
+Check the current version before starting:
 
 ```bash
 oc get clusterversions.config.openshift.io
@@ -492,8 +524,8 @@ worker   True      False      False      4              4
 
 The following OCP versions must **not** be used as upgrade targets:
 
-| OCP Version | Channel restriction |
-|-------------|-------------------|
+| OCP Version | Restriction |
+|-------------|-------------|
 | `4.20.4` | All channels |
 | `4.19.19` | All channels |
 | `4.18.29` | Candidate channel only |
@@ -517,12 +549,12 @@ Warning  UpdatePaused  InfoScaleCluster
   to resume, annotate InfoScaleCluster with infoscale.veritas.com/forceMigrate=true
 ```
 
-**Why this happens:** Any pod not owned by a standard Kubernetes controller (Deployment, StatefulSet, DaemonSet, ReplicaSet) blocks the upgrade, because the operator cannot safely migrate it.
+**Why this happens:** Any pod not owned by a standard Kubernetes controller (Deployment, StatefulSet, DaemonSet, or ReplicaSet) blocks the upgrade because the operator cannot safely migrate it.
 
-**Resolution options:**
+**Resolution:**
 
-1. **Preferred:** Identify the workload and either delete it, migrate it manually, or ensure its owner is reconciling it across nodes.
-2. **If downtime is acceptable for that workload:** Force migration by annotating the cluster:
+1. **Preferred:** Identify the workload and delete it, migrate it manually, or ensure its owning controller is reconciling it on another node.
+2. **If downtime is acceptable for that workload**, force migration by annotating the cluster:
 
 ```bash
 oc annotate infoscaleclusters infoscalecluster-dev \
@@ -540,13 +572,13 @@ oc annotate infoscaleclusters infoscalecluster-dev \
 
 ### 2. NFD Crash Blocking OCP Upgrade (4.19 → 4.20)
 
-**Symptom:** NFD garbage collector pods crash-loop during OCP upgrades:
+**Symptom:** NFD garbage collector pods enter a crash loop during OCP upgrades:
 
 ```text
 nfd-gc-6b7549bfc4-llv5w   0/1   Running   1 (35s ago)   75s
 ```
 
-Events on the pod show repeated liveness/readiness probe failures against port `8080`.
+Pod events show repeated liveness and readiness probe failures against port `8080`.
 
 **Resolution:** Delete the crashing `nfd-gc` pod. It will be recreated and the upgrade will resume:
 
@@ -554,15 +586,15 @@ Events on the pod show repeated liveness/readiness probe failures against port `
 oc delete pod <nfd-gc-pod-name> -n openshift-nfd
 ```
 
-**Affected versions where this was observed:**
+This issue is caused by an interaction between NFD and the OCP cluster operator. The following versions were affected:
 
-| OCP Version | State |
-|-------------|-------|
-| `4.19.21` | Completed after pod deletion |
-| `4.20.8` | Completed after pod deletion |
+| OCP Version | Outcome after pod deletion |
+|-------------|---------------------------|
+| `4.19.21` | Upgrade resumed |
+| `4.20.8` | Upgrade resumed |
 
 <details>
-<summary>Full event log example</summary>
+<summary>Example pod event log</summary>
 
 ```text
 Warning  Unhealthy  pod/nfd-gc-6b7549bfc4-llv5w
@@ -579,30 +611,30 @@ Normal   Killing    pod/nfd-gc-6b7549bfc4-llv5w
 
 ### 3. Operators Not Upgrading After Install Plan Approval
 
-**Why this happens:** InfoScale SDS Operator and InfoScale Licensing Operator share the same operator group. Each creates two install plans, but only one of those plans lists both operators as owners.
+**Why this happens:** InfoScale SDS Operator and InfoScale Licensing Operator share the same operator group. Each creates two install plans, but only one lists both operators as owners.
 
-**Resolution:** When approving an install plan, always select the plan that shows **both** operators in the preview panel. Approving the wrong plan stalls one of the operators.
+**Resolution:** When approving an install plan, select the plan that shows **both** operators in the preview panel. Approving the wrong plan will stall one of the operators.
 
 ---
 
-### 4. Transient Node Drain Errors During OCP-V Upgrades
+### 4. Transient Node Drain Errors During Upgrades
 
-**Symptom:** Messages like the following appear during OpenShift Virtualization cluster upgrades:
+**Symptom:** The following messages appear during a cluster upgrade:
 
 ```text
 error when evicting pods/"virt-launcher-<VMNAME>" -n "<NAMESPACE>"
 (will retry after 5s)
 ```
 
-**These messages are safe to ignore.** Pod Disruption Budgets intentionally allow VM migration to take longer, and the eviction will succeed once the migration completes.
+These messages are safe to ignore. Pod Disruption Budgets allow VM migrations to take longer, and eviction retries automatically until the migration completes.
 
-See [Red Hat KB 7067725](https://access.redhat.com/solutions/7067725) for details.
+See [Red Hat KB 7067725](https://access.redhat.com/solutions/7067725) for additional details.
 
 ---
 
 ### 5. VM Migration Timeouts Pausing the InfoScale Upgrade
 
-**Symptom:** The InfoScale upgrade stalls because one or more `VirtualMachineInstanceMigration` resources are in a failed/timed-out state:
+**Symptom:** The upgrade stalls because one or more `VirtualMachineInstanceMigration` resources are in a failed state:
 
 ```bash
 oc describe infoscaleclusters -n infoscale-vtas <cluster-name> | grep -A2 UpdatePaused
@@ -617,35 +649,38 @@ Warning  UpdatePaused  InfoScaleCluster
 **Common causes:**
 
 - Cluster resource contention or insufficient migration bandwidth
-- A migration policy that limits bandwidth for certain VMs
+- A migration policy that caps bandwidth for a group of VMs
 - Excessive dirty-page churn preventing memory convergence
-- VMs with very large memory footprint
+- Very large VM memory footprint
 
-**Resolution:** Delete the failed migration resource. The InfoScale operator will automatically retry it:
+**Resolution:** Delete the failed migration resource. The operator will automatically retry:
 
 ```bash
 oc get vmim -n <namespace>
 oc delete vmim <failed-migration-name> -n <namespace>
 ```
 
-Confirm the migration name from the event, for example:
+To identify the correct migration, inspect it first:
 
 ```bash
 oc describe vmim infoscale-fio-vm-1-114880f98092cdab -n prod
 ```
 
 Look for:
+
 ```text
 Failure Reason: Live migration is not completed after #Num seconds and has been aborted
 ```
 
 **To prevent recurrence:**
 
-1. Ensure `allowAutoConverge: true` is set in the `kubevirt` resource:
+1. Verify `allowAutoConverge` is enabled in the kubevirt resource:
 
    ```bash
    oc get kubevirt -n kubevirt-hyperconverged -oyaml | grep autoConverge
    ```
+
+   Set it to `true` if it is `false`.
 
 2. If memory pressure alerts appear in the web console, consider increasing `systemReserved.memory` on schedulable nodes. See the [OCP nodes documentation](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/nodes/working-with-nodes#nodes-nodes-managing-about_nodes-nodes-managing) for guidance.
 
@@ -655,4 +690,4 @@ Failure Reason: Live migration is not completed after #Num seconds and has been 
    systemReserved.memory = min( max(2Gi, 5% of node RAM), 8Gi )
    ```
 
-   Final value should be chosen by the cluster administrator based on observed surge patterns and bandwidth constraints.
+   The final value should be determined by the cluster administrator based on observed surge patterns and bandwidth constraints.
