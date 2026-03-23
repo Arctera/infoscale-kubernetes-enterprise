@@ -29,8 +29,6 @@ Enough resources are available for VM migration if using OCP-V, please follow Re
 
 Pre-flight CLI should not flag any errors or there should not be any pending remediations, this script is part of infoscale-tools-v9.1.2.tar Note:Please check InfoScale support matrix before finalizing OpenShift cluster version for upgrade
 
-## Prerequisites
-
 Before running the script, ensure that you have Bash installed on your system.
 
 - Bash: This script is intended to be run in a Bash shell. If you're using a different shell, consider switching to Bash. Also ,make sure jq is installed since script uses it.
