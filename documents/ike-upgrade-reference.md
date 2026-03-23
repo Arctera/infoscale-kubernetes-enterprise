@@ -1,4 +1,5 @@
 # InfoScale Kubernetes Enterprise (IKE) Upgrade Guide
+# Upgrade Reference
 
 ## Table of Contents
 
@@ -6,7 +7,7 @@
 - [Pre-requisites](#pre-requisites)
 - [InfoScale Operator upgrade](#infoscale-operator-upgrade)
 - [InfoScale Cluster version upgrade (Software upgrade)](#infoscale-cluster-version-upgrade-software-upgrade)
-- [Upgrading to InfoScale](#upgrading-to-infoscale)
+  - [Upgrading to InfoScale](#upgrading-to-infoscale)
 - [Platform/OpenShift upgrade](#platformopenshift-upgrade)
 - [Troubleshooting](#troubleshooting)
 - [Limitations](#limitations)
@@ -15,104 +16,107 @@
 
 This page outlines the workflows for IKE upgrades and end-to-end upgrades, where users can upgrade OpenShift and the InfoScale cluster in two steps
 
-InfoScale Operator upgrade
+- InfoScale Operator upgrade
 
-InfoScale cluster version upgrade (CR Version change)
+- InfoScale cluster version upgrade (CR Version change)
 
 Based on the source version and observed known issues; InfoScale upgrade workflows can change with additional preparatory steps. With these workflows, IKE ensuring upgrades without downtime of deployed applications and Virtual machines in OpenShift and OpenShift Virtualisation platform. Also; 1 and 2 should be completed before upgrading OpenShift; unless marked for combined upgrade where, CR version and OCP upgrades done simultaneously. (combined upgrade is not under the scope of this page)
 
 ## Pre-requisites
 
-The platform should remain stable and responsive, without entering into high-latency states caused by API server saturation, excessive thrashing or surges in node resource pressure
+1. The platform should remain stable and responsive, without entering into high-latency states caused by API server saturation, excessive thrashing or surges in node resource pressure
 
-Enough resources are available for VM migration if using OCP-V, please follow Red Hat OpenShift documentation for this.
+2. Enough resources are available for VM migration if using OCP-V, please follow Red Hat OpenShift documentation for this.
 
-Pre-flight CLI should not flag any errors or there should not be any pending remediations, this script is part of infoscale-tools-v9.1.2.tar Note:Please check InfoScale support matrix before finalizing OpenShift cluster version for upgrade
+3. Pre-flight CLI should not flag any errors or there should not be any pending remediations, 
+   this script is part of infoscale-tools-v9.1.2.tar 
 
-Before running the script, ensure that you have Bash installed on your system.
+    Note: Please check InfoScale support matrix before finalizing OpenShift cluster version for upgrade
 
-- Bash: This script is intended to be run in a Bash shell. If you're using a different shell, consider switching to Bash. Also ,make sure jq is installed since script uses it.
+    ```bash
 
-```bash
-./preflight-cli.sh --target-ike <infoscale_version> --target-ocp <ocp_version>
-```
+    Before running the script, ensure that you have Bash installed on your system.
 
-e.g.
+    - Bash: This script is intended to be run in a Bash shell. If you're using a different shell, consider switching to Bash. Also ,make sure jq is installed since script uses it.
 
-```bash
-./preflight-cli.sh --target-ike 9.1.2 --target-ocp 4.19.x
-========== PRE-FLIGHT SUMMARY ==========
-04-workload-sanity.sh : All checks passed
-03-sourceclust.sh : All checks passed
-01-platform.sh : All checks passed
-02-ike-versions.sh : All checks passed
-========================================
-[INFO]  All output saved to: /opt/Preflight/preflight/logs/preflight-20260317-095735/preflight.log
-```
+    ```bash
+    ./preflight-cli.sh --target-ike <infoscale_version> --target-ocp <ocp_version>
 
-There should be no pending rollouts. All configurations should be in sync, all the worker pools should be healthy.
+    e.g.
 
-If No existing split brain should be seen in deployed InfoScale cluster before triggering upgrades
+    ./preflight-cli.sh --target-ike 9.1.2 --target-ocp 4.19.x
+    ========== PRE-FLIGHT SUMMARY ==========
+    04-workload-sanity.sh : All checks passed
+    03-sourceclust.sh : All checks passed
+    01-platform.sh : All checks passed
+    02-ike-versions.sh : All checks passed
+    ========================================
+    [INFO]  All output saved to: /opt/Preflight/preflight/logs/preflight-20260317-095735/preflight.log
+    ```
 
-Before OCP upgrade is executed on the OCP-V VIKE cluster please execute following following commands inside SDS pods
+4. There should be no pending rollouts. All configurations should be in sync, all the worker pools should be healthy.
 
-```bash
-#oc exec -it infoscale-sds-21432-xxxx-xxxx  -n infoscale-vtas -- bash
-#vxfenadm -s /dev/vx/rdmp/<dmpnodename>
-```
+5. If No existing split brain should be seen in deployed InfoScale cluster before triggering upgrades
 
-No of keys should match the number of nodes X no of paths for each disk.
+    Before OCP upgrade is executed on the OCP-V VIKE cluster please execute following following commands inside SDS pods
 
-e.g if no of nodes is 5 and each disk has 2 path then you should see 10 disks
+    ```bash
+    #oc exec -it infoscale-sds-21432-xxxx-xxxx  -n infoscale-vtas -- bash
+    #vxfenadm -s /dev/vx/rdmp/<dmpnodename>
+    ```
 
-```text
-[root@ocptest-01 /]# vxfenadm -s /dev/vx/rdmp/emc0_346f
-Reading SCSI Registration Keys...
-Device Name: /dev/vx/rdmp/emc0_346f
-Total Number Of Keys: 10
-key[0]:
-        [Numeric Format]:   65,80,71,82,48,48,49,57
-        [Character Format]: APGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 0   Node Name: ocptest-01.test.int
-key[1]:
-        [Numeric Format]:   65,80,71,82,48,48,49,57
-        [Character Format]: APGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 0   Node Name: ocptest-01.test.int
-key[2]:
-        [Numeric Format]:   67,80,71,82,48,48,49,57
-        [Character Format]: CPGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 2   Node Name: ocptest-02.test.int
-key[3]:
-        [Numeric Format]:   67,80,71,82,48,48,49,57
-        [Character Format]: CPGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 2   Node Name: ocptest-02.test.int
-key[4]:
-        [Numeric Format]:   68,80,71,82,48,48,49,57
-        [Character Format]: DPGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 3   Node Name: ocptest-03.test.int
-key[5]:
-        [Numeric Format]:   68,80,71,82,48,48,49,57
-        [Character Format]: DPGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 3   Node Name: ocptest-03.test.int
-key[6]:
-        [Numeric Format]:   69,80,71,82,48,48,49,57
-        [Character Format]: EPGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 4   Node Name: ocptest-04.test.int
-key[7]:
-        [Numeric Format]:   69,80,71,82,48,48,49,57
-        [Character Format]: EPGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 4   Node Name: ocptest-04.test.int
-key[8]:
-        [Numeric Format]:   66,80,71,82,48,48,49,57
-        [Character Format]: BPGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 1   Node Name: ocptest-05.test.int
-key[9]:
-        [Numeric Format]:   66,80,71,82,48,48,49,57
-        [Character Format]: BPGR0019
-        [Node Format]: Cluster ID: unknown  Node ID: 1   Node Name: ocptest-05.test.int
-```
+    No of keys should match the number of nodes X no of paths for each disk.
 
-With kubeleconfig; no hard eviction should be set if system memory reservations exceeds.
+    e.g if no of nodes is 5 and each disk has 2 path then you should see 10 disks
+
+    ```text
+    [root@ocptest-01 /]# vxfenadm -s /dev/vx/rdmp/emc0_346f
+    Reading SCSI Registration Keys...
+    Device Name: /dev/vx/rdmp/emc0_346f
+    Total Number Of Keys: 10
+    key[0]:
+            [Numeric Format]:   65,80,71,82,48,48,49,57
+            [Character Format]: APGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 0   Node Name: ocptest-01.test.int
+    key[1]:
+            [Numeric Format]:   65,80,71,82,48,48,49,57
+            [Character Format]: APGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 0   Node Name: ocptest-01.test.int
+    key[2]:
+            [Numeric Format]:   67,80,71,82,48,48,49,57
+            [Character Format]: CPGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 2   Node Name: ocptest-02.test.int
+    key[3]:
+            [Numeric Format]:   67,80,71,82,48,48,49,57
+            [Character Format]: CPGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 2   Node Name: ocptest-02.test.int
+    key[4]:
+            [Numeric Format]:   68,80,71,82,48,48,49,57
+            [Character Format]: DPGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 3   Node Name: ocptest-03.test.int
+    key[5]:
+            [Numeric Format]:   68,80,71,82,48,48,49,57
+            [Character Format]: DPGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 3   Node Name: ocptest-03.test.int
+    key[6]:
+            [Numeric Format]:   69,80,71,82,48,48,49,57
+            [Character Format]: EPGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 4   Node Name: ocptest-04.test.int
+    key[7]:
+            [Numeric Format]:   69,80,71,82,48,48,49,57
+            [Character Format]: EPGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 4   Node Name: ocptest-04.test.int
+    key[8]:
+            [Numeric Format]:   66,80,71,82,48,48,49,57
+            [Character Format]: BPGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 1   Node Name: ocptest-05.test.int
+    key[9]:
+            [Numeric Format]:   66,80,71,82,48,48,49,57
+            [Character Format]: BPGR0019
+            [Node Format]: Cluster ID: unknown  Node ID: 1   Node Name: ocptest-05.test.int
+    ```
+
+6. With kubeleconfig; no hard eviction should be set if system memory reservations exceeds.
 
 ## InfoScale Operator upgrade
 
@@ -133,51 +137,43 @@ Notes:
 
 ## InfoScale Cluster version upgrade (Software upgrade)
 
-Make sure kubelet configuration is applied and configuration rollout is done before software upgrade.
+-  Make sure kubelet configuration is applied and configuration rollout is done before software upgrade.
 
-If recommended kubelet configuration is missed during deployment of 9.x then that needs to be applied before software upgrade.
+- If recommended kubelet configuration is missed during deployment of 9.x then that needs to be applied before software upgrade.
 
-Addtional patch is required to apply if upgrading InfoScale from 8.x to 9.1.2
+- Addtional patch is required to apply if upgrading InfoScale from 8.x to 9.1.2
 
-Change InfoScale Cluster version to latest.
+- Change InfoScale Cluster version to latest.
 
-Trigger platform / OCP upgrade (If applicable)
+- Trigger platform / OCP upgrade (If applicable)
 
-## Upgrading to InfoScale
+### Upgrading to InfoScale
 
 Important:
 
-Upgrading InfoScale from 8.x to 9.x (or to 9.1.2) requires an additional kubelet configuration to enable SDS pod lifecycle hooks. To minimize disruption during the configuration rollout, the schedulable MachineConfig pools must be paused before applying the configuration and unpaused only as instructed in the steps below. Unpausing out of order will trigger an immediate forced rollout.
+- Upgrading InfoScale from 8.x to 9.x (or to 9.1.2) requires an additional kubelet configuration to enable SDS pod lifecycle hooks. To minimize disruption during the configuration rollout, the schedulable MachineConfig pools must be paused before applying the configuration and unpaused only as instructed in the steps below. Unpausing out of order will trigger an immediate forced rollout.
 
-If the kubelet configuration was not applied during the initial deployment of InfoScale 9.x, complete the steps below before upgrading to 9.1.2. The preflight CLI will flag this condition if it was missed.
+- If the kubelet configuration was not applied during the initial deployment of InfoScale 9.x, complete the steps below before upgrading to 9.1.2. The preflight CLI will flag this condition if it was missed.
 
 ```bash
 oc get kubeletconfigs.machineconfiguration.openshift.io
-```
-
 is empty OR without following params
 
-```bash
 # oc get kubeletconfigs.machineconfiguration.openshift.io -oyaml | grep -i grace
       shutdownGracePeriod: 15m
       shutdownGracePeriodCriticalPods: 5m
-```
 
 And if its present, check whether it's rolled out
+It should show kubelet inhibitor(replace the correct node below), if it's not present proceed with given configuration.
 
-replace the correct node below; it should show kubelet inhibitor.
-
-if it's not present proceed with given configuration.
-
-```bash
 # ssh core@ocp-w-02.lab.ocp.lan sudo systemd-inhibit
 WHO            UID USER PID  COMM           WHAT     WHY                        MODE
 NetworkManager 0   root 1486 NetworkManager sleep    NetworkManager needs to turn off networks  delay
 kubelet        0   root 3112 kubelet        shutdown Kubelet needs time to handle node shutdown delay
-```
 
-To confirm the kubelet inhibitor is already active on a node (if present, steps A & B can be skipped):
-### A. Kubeletconfig - Follow if workers and masters both are schedulable
+Above output confirms that kubelet inhibitor is already active on a node (if present, steps A & B give below can be skipped)
+```
+#### A. Kubeletconfig - Follow if workers and masters both are schedulable
 
 ```bash
 # Label the MCP
@@ -228,7 +224,7 @@ Status:
     Type:                  Success
 Events:                    <none>
 ```
-### B. Kubeletconfig - Follow if only - workers are schedulable
+#### B. Kubeletconfig - Follow if only - workers are schedulable
 
 ```bash
 # kubelet config should have the same label present in this case.
@@ -252,12 +248,11 @@ kubeletconfig.machineconfiguration.openshift.io/custom-kubelet-config created
 ```
 
 
+Machine config operator will rollout this config only when user unpause / mark pause=false. 
 
-Machine config operator will rollout this config; only when user unpause / mark pause=false. Please do not do this step right away. follow the next instructions
+#### Important : Please do not unpause right away. follow the next instructions(At this stage respective machine config pool/ pools are still paused.)
 
-Note that; at this stage respective machine config pool/ pools are still paused.
-
-Note : If the source InfoScale version is 8.0.4x, you must apply the required patch before proceeding, This need to be done for any other release.
+#### If the source InfoScale version is 8.0.4x, you must apply the required patch before proceeding, 
 
 ```bash
 # Download patch infoscale-patch-8.0.4x.tar.gz from SORT
@@ -304,7 +299,7 @@ Created symlink /etc/systemd/system/multi-user.target.wants/pod-prestop.service 
 [INFO] Patch applied successfully to cluster: infoscalecluster-dev
 ```
 
-### Patch InfoScaleCluster version to 9.1.2
+#### Patch InfoScaleCluster version to 9.1.2
 
 with this step, we are triggering software upgrade of InfoScaleCluster
 
@@ -344,7 +339,7 @@ NAMESPACE        NAME                   VERSION   CLUSTERID   STATE       DISKGR
 infoscale-vtas   infoscalecluster-dev   8.0.400   1230        Upgrading   vrts_kube_dg-1230   Healthy   3d5h
 ```
 
-### Wait for completion of software upgrade
+#### Wait for completion of software upgrade
 
 At this stage, you will see the changes rolled out first for CSI, fencing, Toolset etc then for SDS cluster will fluctuate between degraded and running state, since one node is going out of cluster and joining again. it will take some time depending on workload running on system
 
@@ -354,7 +349,7 @@ infoscale-vtas   infoscalecluster-dev   8.0.400   1230        Upgrading   vrts_k
 infoscale-vtas   infoscalecluster-dev   9.1.2     1230        Running     vrts_kube_dg-1230   Healthy    39m
 ```
 
-### Enable the paused pools - Sequentially if applicable (If it was paused during kubelet config) if not then do not need to follow this step.
+#### Enable the paused pools - Sequentially if applicable (If it was paused during kubelet config) if not then do not need to follow this step.
 
 Here, preferably enable / unpause the masters first if schedulable. wait for complete rollout and then do the same with worker pool. Please note that enabling both; does not guarantee applications availability
 
@@ -375,7 +370,7 @@ ocp348-w03.test.int       Ready                      worker                 41d 
 ocp348-w04.test.int       Ready,SchedulingDisabled   worker                 41d   v1.30.7
 ```
 
-### Wait for rollout and InfoScaleCluster to be in ready state
+#### Wait for rollout and InfoScaleCluster to be in ready state
 
 if node is taking too long and showing state - NotReady,SchedulingDisabled try resetting the node
 
