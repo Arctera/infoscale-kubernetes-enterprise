@@ -391,9 +391,9 @@ Below are some exceptions , IKE will not be supported on below OpenShift version
 |---|---|
 | 4.20.4 | All channels |
 | 4.19.19 | All channels |
-| 4.18.29 | Candidate channel only |
+| 4.18.29 | All channels |
 | 4.17.44 | All channels |
-| 4.16.53 | Candidate channel only |
+| 4.16.53 | All channels |
 
 Note: While performing OCP upgrade, its important know that in full cluster upgrade, both pools i.e. masters and workers rollout in parallel, which will be problem if masters are schedulable.
 
@@ -426,7 +426,7 @@ infoscale-vtas   sanity-ocp416   9.1.2     21432       Running   vrts_kube_dg-21
 if any workload which is not owned by ANY of standard kubernetes controllers InfoScale operator will pause the upgrade with following events -
 
 ```text
-Warning  UpdatePaused  23m (x89 over 41m)   InfoScaleCluster  ErrorCode=10050 ErrorMsg=Resource is not managed by controller : pod test/redis not managed statefulset, replicaset, daemonset on volqalnx984
+Warning  UpdatePaused  23m (x89 over 41m)   InfoScaleCluster  ErrorCode=10050 ErrorMsg=Resource is not managed by controller : pod test/redis not managed statefulset, replicaset, daemonset on ocptest-01
 Warning  UpdatePaused  14m (x4 over 15m)    InfoScaleCluster  to resume upgrade with forced migration of such workloads, annotate InfoScaleCluster with infoscale.veritas.com/forceMigrate=true
 ```
 
@@ -504,7 +504,7 @@ User can observe following harmless error messages / alerts while upgrading Open
 error when evicting pods/"virt-launcher-<VMNAME>" -n "<NAMESPACE>" (will retry after 5s):
 ```
 
-related details can be found in this RedHat knowledge base - OCP-V: error when evicting pods/"virt-launcher-" -n "" (will retry
+related details can be found in this RedHat knowledge base - https://access.redhat.com/solutions/7067725
 
 related articles states that these messages can safely be ignored; as these pod disruption budges can expanded runtime for migration of VirtualMachine resources
 
@@ -517,6 +517,7 @@ If pre-flight CLI reports such snapshots delete those using below stale snapshot
 ```bash
 Usage:
 ./snapshot_cleanup.sh -n <namespace> -p <pod_name> [-g <diskgroup>] [-d]
+
 Options:
 -n <namespace>: The OpenShift namespace where the pod is located (required).
 -p <pod_name>: The name of the InfoScale SDS pod (required).
@@ -531,13 +532,14 @@ Example:
 ./snapshot_cleanup.sh -n infoscale-vtas -p infoscale-sds-21432-7820e9290fa0fc26-b9phd -g vrts_kube_dg-1121
 -g <diskgroup>: Specific disk group to process (optional). If not specified, all disk groups will be processed.
 -d: Dry-run mode. Displays the commands that would be executed without performing any actual deletions (optional).
+
 Example:
 ./snapshot_cleanup.sh -n infoscale-vtas -p infoscale-sds-21432-7820e9290fa0fc26-b9phd -g vrts_kube_dg-1121
 ```
 
 ### 6. Failed VM migrations due to timeouts - InfoScale upgrade is in paused state
 
-This can be observed in InfoScaleCluster upgrade if -
+This can be observed in InfoScaleCluster upgrade if,
 
 - There’s contention in cluster, resource heaviness and not enough bandwidth is set for VM migration
 - Some migration policy overriding the default bandwidth and limiting the group of VMs for migration from source node to others
@@ -583,9 +585,17 @@ To remediate such timeouts; user can simply delete the corresponding virtual mac
 
 To avoid hitting this again, we suggest following configuration changes -
 
-Set allowAutoConverge: true in kubevirt resource, if set as false
+-  Set allowAutoConverge: true in kubevirt resource, if set as false
 
-If memory violations alerts are also seen in web console, related to system memory reservation exceeds certain limit, you can optionally increase system slice memory on schedulable nodes, keep in mind that this configuration requires rollout. Details can be found here; in 2 point - Chapter 6. Working with nodes | Nodes | OpenShift Container Platform | 4.20 | Red Hat Documentation Though above page sets very less memory, broad suggestion is to have - systemReserved.memory = min( max(2G, 5% of totalRAM of node), 8Gi ) This is upto cluster admin to decide this reservation; based upon surge, bandwidth and node management constraints.
+-  If memory violations alerts are also seen in web console, related to system memory reservation exceeds certain limit, you can optionally increase system slice
+   memory on schedulable nodes, keep in mind that this configuration requires rollout.
+ 
+   Details can be found here; in 2 point -
+   https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/nodes/working-with-nodes#nodes-nodes-managing-about_nodes-nodes-managing
+     
+   Though above page sets very less memory, broad suggestion is to have -
+   systemReserved.memory     = min( max(2G, 5% of totalRAM of node), 8Gi )
+   This is upto cluster admin to decide this reservation; based upon surge, bandwidth and node management constraints.
 
 ## Limitations
 
