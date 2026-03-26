@@ -1,5 +1,4 @@
 # InfoScale Kubernetes Enterprise (IKE) Upgrade Guide
-# Upgrade Reference
 
 ## Table of Contents
 
@@ -116,7 +115,7 @@ Based on the source version and observed known issues; InfoScale upgrade workflo
             [Node Format]: Cluster ID: unknown  Node ID: 1   Node Name: ocptest-05.test.int
     ```
 
-6. With kubeleconfig; no hard eviction should be set if system memory reservations exceeds.
+6. With kubeletconfig; no hard eviction should be set if system memory reservations exceeds.
 
 ## InfoScale Operator upgrade
 
