@@ -254,7 +254,7 @@ Machine config operator will rollout this config only when user unpause / mark p
 #### If the source InfoScale version is 8.0.4x, you must apply the required patch before proceeding, 
 
 ```bash
-# Download patch infoscale-patch-8.0.4x.tar.gz from SORT
+# This patch can be obtained through InfoScale Support ticket. 
 tar xvzf infoscale-patch-8.0.4x.tar.gz
 cd infoscale-patch-8.0.4x
 # Apply the patch
