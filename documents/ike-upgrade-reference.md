@@ -259,8 +259,6 @@ tar xvzf infoscale-patch-8.0.4x.tar.gz
 cd infoscale-patch-8.0.4x
 # Apply the patch
 ./apply-cluster-patch.sh infoscalecluster-dev
-# Apply
-./apply-cluster-patch.sh infoscalecluster-dev
 [INFO] Using CLI: oc
 [INFO] Locating InfoScaleCluster: infoscalecluster-dev
 [INFO] Cluster namespace: infoscale-vtas
