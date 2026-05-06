@@ -39,7 +39,8 @@ Based on the source version and observed known issues; InfoScale upgrade workflo
     - Bash: This script is intended to be run in a Bash shell. If you're using a different shell, consider switching to Bash. Also ,make sure jq is installed since script uses it.
 
     ```bash
-    ./preflight-cli.sh --target-ike <infoscale_version> --target-ocp <ocp_version>
+    ./preflight-cli.sh --type upgrade --target-ike 9.1.2 --target-ocp 4.17.10 --rule 1,2,3,4
+
 
     e.g.
 
@@ -50,7 +51,7 @@ Based on the source version and observed known issues; InfoScale upgrade workflo
     01-platform.sh : All checks passed
     02-ike-versions.sh : All checks passed
     ========================================
-    [INFO]  All output saved to: /opt/Preflight/preflight/logs/preflight-20260317-095735/preflight.log
+    
     ```
 
 4. There should be no pending rollouts. All configurations should be in sync, all the worker pools should be healthy.
