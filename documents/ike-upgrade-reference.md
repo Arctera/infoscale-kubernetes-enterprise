@@ -28,7 +28,7 @@ Based on the source version and observed known issues; InfoScale upgrade workflo
 2. Enough resources are available for VM migration if using OCP-V, please follow Red Hat OpenShift documentation for this.
 
 3. Pre-flight CLI should not flag any errors or there should not be any pending remediations, 
-   this script is part of infoscale-tools-v9.1.2.tar 
+   this script is part of infoscale-tools-v9.1.3.tar 
 
     Note: Please check InfoScale support matrix before finalizing OpenShift cluster version for upgrade
 
@@ -43,7 +43,7 @@ Based on the source version and observed known issues; InfoScale upgrade workflo
 
     e.g.
 
-    ./preflight-cli.sh --target-ike 9.1.2 --target-ocp 4.19.x
+    ./preflight-cli.sh --target-ike 9.1.3 --target-ocp 4.19.x
     ========== PRE-FLIGHT SUMMARY ==========
     04-workload-sanity.sh : All checks passed
     03-sourceclust.sh : All checks passed
@@ -131,8 +131,8 @@ Based on the source version and observed known issues; InfoScale upgrade workflo
 
 Notes:
 - Multiple hops can be required depending on deployed operator version.
-- Example: `8.0.400 -> 8.0.410 -> 9.1.0 -> 9.1.2`
-- For `9.1.0 -> 9.1.2`, only one hop is required.
+- Example: `8.0.400 -> 8.0.410 -> 9.1.0 -> 9.1.2 -> 9.1.3 
+- For `9.1.0 -> 9.1.3`, only one hop is required.
 
 ## InfoScale Cluster version upgrade (Software upgrade)
 
@@ -140,7 +140,7 @@ Notes:
 
 - If recommended kubelet configuration is missed during deployment of 9.x then that needs to be applied before software upgrade.
 
-- Addtional patch is required to apply if upgrading InfoScale from 8.x to 9.1.2
+- Addtional patch is required to apply if upgrading InfoScale from 8.x to 9.1.3
 
 - Change InfoScale Cluster version to latest.
 
@@ -150,9 +150,9 @@ Notes:
 
 Important:
 
-- Upgrading InfoScale from 8.x to 9.x (or to 9.1.2) requires an additional kubelet configuration to enable SDS pod lifecycle hooks. To minimize disruption during the configuration rollout, the schedulable MachineConfig pools must be paused before applying the configuration and unpaused only as instructed in the steps below. Unpausing out of order will trigger an immediate forced rollout.
+- Upgrading InfoScale from 8.x to 9.x (or to 9.1.3) requires an additional kubelet configuration to enable SDS pod lifecycle hooks. To minimize disruption during the configuration rollout, the schedulable MachineConfig pools must be paused before applying the configuration and unpaused only as instructed in the steps below. Unpausing out of order will trigger an immediate forced rollout.
 
-- If the kubelet configuration was not applied during the initial deployment of InfoScale 9.x, complete the steps below before upgrading to 9.1.2. The preflight CLI will flag this condition if it was missed.
+- If the kubelet configuration was not applied during the initial deployment of InfoScale 9.x, complete the steps below before upgrading to 9.1.3. The preflight CLI will flag this condition if it was missed.
 
 ```bash
 oc get kubeletconfigs.machineconfiguration.openshift.io
@@ -296,12 +296,12 @@ Created symlink /etc/systemd/system/multi-user.target.wants/pod-prestop.service 
 [INFO] Patch applied successfully to cluster: infoscalecluster-dev
 ```
 
-#### Patch InfoScaleCluster version to 9.1.2
+#### Patch InfoScaleCluster version to 9.1.3
 
 with this step, we are triggering software upgrade of InfoScaleCluster
 
 ```bash
-oc patch infoscalecluster <cluster-name>  -n <namespace>  --type=merge  -p '{"spec":{"version":"9.1.2"}}'
+oc patch infoscalecluster <cluster-name>  -n <namespace>  --type=merge  -p '{"spec":{"version":"9.1.3"}}'
 infoscalecluster.infoscale.veritas.com/<namespace> patched
 ```
 
@@ -343,7 +343,7 @@ At this stage, you will see the changes rolled out first for CSI, fencing, Tools
 ```text
 infoscale-vtas   infoscalecluster-dev   8.0.400   1230        Upgrading   vrts_kube_dg-1230   Degraded   38m
 infoscale-vtas   infoscalecluster-dev   8.0.400   1230        Upgrading   vrts_kube_dg-1230   Healthy    39m
-infoscale-vtas   infoscalecluster-dev   9.1.2     1230        Running     vrts_kube_dg-1230   Healthy    39m
+infoscale-vtas   infoscalecluster-dev   9.1.3     1230        Running     vrts_kube_dg-1230   Healthy    39m
 ```
 
 #### Enable the paused pools - Sequentially if applicable (If it was paused during kubelet config) if not then do not need to follow this step.
@@ -374,8 +374,8 @@ if node is taking too long and showing state - NotReady,SchedulingDisabled try r
 ```bash
 # oc get infoscaleclusters -Aw
 NAMESPACE        NAME                   VERSION   CLUSTERID   STATE     DISKGROUPS          STATUS     AGE
-infoscale-vtas   infoscalecluster-dev   9.1.2     1230        Running   vrts_kube_dg-1230   Degraded   117m
-infoscale-vtas   infoscalecluster-dev   9.1.2     1230        Running   vrts_kube_dg-1230   Healthy    121m
+infoscale-vtas   infoscalecluster-dev   9.1.3     1230        Running   vrts_kube_dg-1230   Degraded   117m
+infoscale-vtas   infoscalecluster-dev   9.1.3     1230        Running   vrts_kube_dg-1230   Healthy    121m
 ```
 
 ## Platform/OpenShift upgrade
@@ -405,7 +405,7 @@ During OpenShift upgrade, when machine config operator is getting updated InfoSc
 ```bash
 #oc get infoscalecluster -A
 NAMESPACE        NAME            VERSION   CLUSTERID   STATE        DISKGROUPS           STATUS     AGE
-infoscale-vtas   sanity-ocp416   9.1.2     21432       OS-Upgrade   vrts_kube_dg-21432   Degraded   2d1h
+infoscale-vtas   sanity-ocp416   9.1.3     21432       OS-Upgrade   vrts_kube_dg-21432   Degraded   2d1h
 ```
 
 Once OpenShift upgrade is successful make sure InfoScale cluster is in “Running” state before performing any operations.
@@ -413,7 +413,7 @@ Once OpenShift upgrade is successful make sure InfoScale cluster is in “Runnin
 ```bash
 # oc get infoscalecluster -A
 NAMESPACE        NAME            VERSION   CLUSTERID   STATE     DISKGROUPS           STATUS    AGE
-infoscale-vtas   sanity-ocp416   9.1.2     21432       Running   vrts_kube_dg-21432   Healthy   2d1h
+infoscale-vtas   sanity-ocp416   9.1.3     21432       Running   vrts_kube_dg-21432   Healthy   2d1h
 ```
 
 ## Troubleshooting
@@ -509,7 +509,7 @@ related articles states that these messages can safely be ignored; as these pod 
 
 Upgrade from 8.x to 9.x gets stuck with Resource Busy if there stale / incorrect snapshot relationships and tags are present inside InfoScale SDS pods, because of this SDS operator repeatedly see “node busy” or in-progress volume/snapshot sync.
 
-If pre-flight CLI reports such snapshots delete those using below stale snapshot cleanup script, this script is part of infoscale-tools-v9.1.2.tar
+If pre-flight CLI reports such snapshots delete those using below stale snapshot cleanup script, this script is part of infoscale-tools-v9,1,3.tar
 
 ```bash
 Usage:
