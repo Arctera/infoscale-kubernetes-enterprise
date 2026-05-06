@@ -39,7 +39,7 @@ Based on the source version and observed known issues; InfoScale upgrade workflo
     - Bash: This script is intended to be run in a Bash shell. If you're using a different shell, consider switching to Bash. Also ,make sure jq is installed since script uses it.
 
     ```bash
-    ./preflight-cli.sh --type upgrade --target-ike 9.1.2 --target-ocp 4.17.10 --rule 1,2,3,4
+    ./preflight-cli.sh --type upgrade --target-ike 9.1.3 --target-ocp 4.17.10 --rule 1,2,3,4
 
 
     e.g.
