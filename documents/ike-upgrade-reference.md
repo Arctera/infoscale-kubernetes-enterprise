@@ -137,9 +137,7 @@ Notes:
 
 ## InfoScale Cluster version upgrade (Software upgrade)
 
--  Make sure kubelet configuration is applied and configuration rollout is done before software upgrade.
-
-- If recommended kubelet configuration is missed during deployment of 9.x then that needs to be applied before software upgrade.
+- If recommended kubelet configuration is missed during deployment of 9.x then that needs to be applied before software upgrade.(This is pre-req for for the fresh installation for 9.1.x releaes)
 
 - Addtional patch is required to apply if upgrading InfoScale from 8.x to 9.1.3
 
