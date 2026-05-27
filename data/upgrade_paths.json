@@ -157,7 +157,7 @@
           },
           {
             "version": "9.2.0",
-            "supported": true,
+            "supported": true
           }
         ]
       },
@@ -166,7 +166,7 @@
         "to": [
           {
             "version": "9.2.0",
-            "supported": true,
+            "supported": true
           }
         ]
       }
