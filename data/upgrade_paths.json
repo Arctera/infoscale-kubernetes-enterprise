@@ -158,7 +158,6 @@
           {
             "version": "9.2.0",
             "supported": true,
-            "workaround": { "required": false }
           }
         ]
       },
@@ -168,7 +167,6 @@
           {
             "version": "9.2.0",
             "supported": true,
-            "workaround": { "required": false }
           }
         ]
       }
