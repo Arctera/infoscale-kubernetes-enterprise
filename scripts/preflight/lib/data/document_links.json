@@ -1,0 +1,22 @@
+{
+  "priorityclass_conflict_resolution": {
+    "title": "CSI PriorityClass Conflict Resolution",
+    "url": "https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/documents/troubleshooting/csi-priority-class-remediation.md"
+  },
+  "upgrade_doc_reference": {
+    "title": "IKE Upgrade reference document",
+    "url": "https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/documents/ike-upgrade-reference.md"
+  },
+  "prepare_for_upgrade": {
+    "title": "Preparing to upgrade to latest version",
+    "url": "https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/documents/troubleshooting/kubelet-config-cleanup.md"
+  },
+  "IKE_troubleshooting": {
+    "title": "IKE troubleshooting document",
+    "url": "https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/documents/troubleshooting/infoscale-source-cluster-remdiations.md"
+  },
+  "Upgrade_matrix": {
+    "title": "Upgrade matrix and paths",
+    "url": "https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/data/upgrade_paths.json"
+  }
+}

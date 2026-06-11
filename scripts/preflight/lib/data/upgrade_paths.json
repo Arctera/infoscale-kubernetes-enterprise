@@ -1,0 +1,173 @@
+{
+  "ike_ocp_compatibility": [
+    {
+      "ike": "8.0.400",
+      "ocp": {
+        "4.16": { "max": "4.16.55", "exceptions": [] },
+        "4.17": { "max": "4.17.47", "exceptions": [] }
+      }
+    },
+     {
+      "ike": "8.0.410",
+      "ocp": {
+        "4.16": { "max": "4.16.28", "exceptions": [] },
+              "4.17": { "max": "4.17.47", "exceptions": [] },
+        "4.19": { "max": "4.19.19", "exceptions": [] },
+        "4.18": { "max": "4.18.29", "exceptions": [] }
+      }
+    },
+     {
+      "ike": "9.1.0",
+      "ocp": {
+        "4.17": { "max": "4.17.47", "exceptions": [] },
+        "4.18": { "max": "4.18.20", "exceptions": [] },
+        "4.19": { "max": "4.19.17", "exceptions": [] },
+        "4.20": { "max": "4.20.3", "exceptions": [] }
+      }
+    },
+     {
+      "ike": "9.1.2",
+      "ocp": {
+              "4.16": { "max": "4.16.55", "exceptions": ["4.16.53"] },
+              "4.17": { "max": "4.17.49", "exceptions": ["4.17.44"] },
+        "4.18": { "max": "4.18.33", "exceptions": ["4.18.29"] },
+        "4.19": { "max": "4.19.24", "exceptions": ["4.19.19"] },
+        "4.20": { "max": "4.20.14", "exceptions": ["4.20.4"] },
+        "4.21": { "max": "4.21.3", "exceptions": [] }
+      }
+    },
+    {
+      "ike": "9.1.3",
+      "ocp": {
+              "4.16": { "max": "4.16.55", "exceptions": ["4.16.53"] },
+              "4.17": { "max": "4.17.49", "exceptions": ["4.17.44"] },
+        "4.18": { "max": "4.18.33", "exceptions": ["4.18.29"] },
+        "4.19": { "max": "4.19.24", "exceptions": ["4.19.19"] },
+        "4.20": { "max": "4.20.14", "exceptions": ["4.20.4"] },
+        "4.21": { "max": "4.21.3", "exceptions": [] }
+      }
+    },
+    {
+      "ike": "9.2.0",
+      "ocp": {
+              "4.16": { "max": "4.16.55", "exceptions": ["4.16.53"] },
+              "4.17": { "max": "4.17.49", "exceptions": ["4.17.44"] },
+        "4.18": { "max": "4.18.33", "exceptions": ["4.18.29"] },
+        "4.19": { "max": "4.19.31", "exceptions": ["4.19.19"] },
+        "4.20": { "max": "4.20.22", "exceptions": ["4.20.4"] },
+        "4.21": { "max": "4.21.16", "exceptions": [] }
+      }
+    }
+  ],
+
+    "ike_upgrade_paths": [
+      {
+        "from": "8.0.400",
+        "to": [
+            {
+            "version": "9.1.0",
+            "supported": false,
+            "reason": "This upgrade path is not supported"
+          },
+          {
+            "version": "9.1.2",
+            "supported": true,
+            "workaround": {
+              "required": true,
+              "title": "Mitigation steps required",
+              "notes": "Please follow steps from: https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/documents/ike-upgrade-reference.md"
+            }
+          },
+          {
+            "version": "9.1.3",
+            "supported": true,
+            "workaround": {
+              "required": true,
+              "title": "Mitigation steps required",
+              "notes": "Please follow steps from: https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/documents/ike-upgrade-reference.md"
+            }
+          },
+          {
+            "version": "9.2.0",
+            "supported": true,
+            "workaround": {
+              "required": true,
+              "title": "Mitigation steps required",
+              "notes": "Please follow steps from: https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/documents/ike-upgrade-reference.md"
+            }
+          }
+        ]
+      },
+      {
+        "from": "8.0.410",
+        "to": [
+          {
+            "version": "9.1.0",
+            "supported": false,
+            "reason": "This upgrade path is not supported"
+          },
+          {
+            "version": "9.1.2",
+            "supported": true,
+            "workaround": {
+              "required": true,
+              "title": "Mitigation steps required",
+              "notes": "Please follow the steps from: https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/documents/ike-upgrade-reference.md"
+            }
+          },
+          {
+            "version": "9.2.0",
+            "supported": true,
+            "workaround": {
+              "required": true,
+              "title": "Mitigation steps required",
+              "notes": "Please follow the steps from: https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/main/documents/ike-upgrade-reference.md"
+            }
+          }
+         
+        ]
+      },
+      {
+        "from": "9.1.0",
+        "to": [
+          {
+            "version": "9.1.2",
+            "supported": true,
+            "workaround": { "required": false }
+          },
+          {
+            "version": "9.1.3",
+            "supported": true,
+            "workaround": { "required": false }
+          },
+          {
+            "version": "9.2.0",
+            "supported": true,
+            "workaround": { "required": false }
+          }
+        ]
+      },
+      {
+        "from": "9.1.2",
+        "to": [
+          {
+            "version": "9.1.3",
+            "supported": true
+          },
+          {
+            "version": "9.2.0",
+            "supported": true
+          }
+        ]
+      },
+      {
+        "from": "9.1.3",
+        "to": [
+          {
+            "version": "9.2.0",
+            "supported": true
+          }
+        ]
+      }
+    ]
+}
