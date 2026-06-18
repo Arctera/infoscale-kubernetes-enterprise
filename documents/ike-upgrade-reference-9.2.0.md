@@ -1,4 +1,3 @@
-# Chapter 6: Upgrading InfoScale
 
 ## Topics
 
