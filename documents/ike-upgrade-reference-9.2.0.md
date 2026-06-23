@@ -193,8 +193,7 @@ oc get infoscaleclusters -A
 
 **Step 3:** Verify that the cluster state transitions to `OS-Upgrade-Pending`.
 
-**Step 4:** Initiate the upgrade of all common resources (fencing and CSI) under the `infoscaleclusterset` controller. Wait until the process reaches the `OS-Upgrade-Pending` stage, then trigger the platform or OCP upgrade once you verify that **all CSI nodes have been updated**.
-
+**Step 4:** Fencing, CSI, and toolset pods will upgrade automatically. Once they are fully updated and the InfoScale cluster status shows OS-Upgrade-Pending, go ahead and initiate the platform/OCP upgrade.
 ```bash
 # Verify CSI nodes are up to date
 oc get ds -n infoscale-vtas
