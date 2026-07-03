@@ -100,7 +100,7 @@ The number of keys should match: `number of nodes × number of paths per disk`.
 
 To upgrade the InfoScale cluster version:
 
-1. Verify that the kubelet configuration is applied and the rollout is complete before starting the software upgrade. Refer to the [Enabling kubelet inhibitor with systemd](#kubelet-inhibitor) section.
+1. Verify that the kubelet configuration is applied and the rollout is complete before starting the software upgrade. Refer to the [Enabling kubelet inhibitor with systemd](Enabling-kubelet-inhibitor.md) section.
    - If the recommended 9.x kubelet configuration was missed during deployment, apply it before upgrading the software.
 
 2. Apply the additional required patch if you are upgrading InfoScale from 8.x to 9.1.2.
