@@ -179,7 +179,7 @@ Combined upgrade allows users to merge a software upgrade with a platform upgrad
 **Step 2:** Patch the InfoScale cluster with the `combine-upgrade` annotation:
 
 ```bash
-oc patch infoscalecluster sanity-ocp416 -n infoscale-vtas \
+oc patch infoscalecluster <cluster-name> -n infoscale-vtas \
   --type=merge -p \
   '{"metadata":{"annotations":{"infoscale.veritas.com/combine-upgrade":"enabled"}},"spec":{"version":"9.2.0"}}'
 ```
