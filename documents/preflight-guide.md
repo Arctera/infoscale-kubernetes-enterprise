@@ -11,7 +11,7 @@ The preflight tool is available at:
 
 Choose the option that best fits your environment.
 
-### Option 1 — Bundled with the InfoScale tools package (recommended)
+### Option 1 — Bundled with the InfoScale tools package 
 
 If you have the InfoScale tools package, the preflight tool is already included. Navigate directly to the preflight directory:
 
