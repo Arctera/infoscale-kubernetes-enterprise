@@ -24,6 +24,10 @@
 # accordance with the terms of this Agreement. $
 #
 
+# --- artifact header ---
+# name: infoscale-tools-v<version>
+# destination: /preflight/preflight-rules
+# --- end ---
 
 set -euo pipefail
 
@@ -158,7 +162,7 @@ check_target_ocp_offered_by_upgrade() {
         local target_re
         target_re=$(printf '%s' "${target_version}" | sed -e 's/[][(){}.^$*+?|\]/\\&/g')
 
-        if ${KUBE_CLI} adm upgrade 2>/dev/null | grep -Eq "^[[:space:]]*${target_re}([[:space:]]|$)"; then
+        if ${KUBE_CLI} adm upgrade 2>&1 | awk '{print $1}' | grep -Fxq "${target_version}"; then
                 log_info "[${RULE_NAME}] Target OCP version ${target_version} is offered by oc adm upgrade."
                 return 0
         fi
@@ -173,10 +177,15 @@ check_target_ocp_offered_by_upgrade() {
                 current_channel="$(${KUBE_CLI} get clusterversion version -o jsonpath='{.spec.channel}' 2>/dev/null || true)"
                 log_warn "[${RULE_NAME}] Target OCP major version stream (4.${target_minor}) differs from current (4.${current_minor})."
                 log_warn "[${RULE_NAME}] Current channel: ${current_channel:-<unknown>}"
-                log_warn "[${RULE_NAME}] For a major-version stream change, switch the channel to the target major release stream (e.g. ${expected_channel})."
-                log_warn "[${RULE_NAME}] Run: oc adm upgrade channel ${expected_channel}"
-                log_warn "[${RULE_NAME}] Then verify: oc adm upgrade"
-                log_warn "[${RULE_NAME}] Non-interactive check: switch channel as above, then re-run preflight to validate visibility of target ${target_version}."
+                if [[ "${current_channel}" == "${expected_channel}" ]]; then
+                        log_warn "[${RULE_NAME}] Channel is already set to ${expected_channel}. The target version (${target_version}) may not yet be offered in the update graph."
+                        log_warn "[${RULE_NAME}] Verify available updates using 'oc adm upgrade' and check with Red Hat Support if this target should be available."
+                else
+                        log_warn "[${RULE_NAME}] For a major-version stream change, switch the channel to the target major release stream (e.g. ${expected_channel})."
+                        log_warn "[${RULE_NAME}] Run: oc adm upgrade channel ${expected_channel}"
+                        log_warn "[${RULE_NAME}] Then verify: oc adm upgrade"
+                        log_warn "[${RULE_NAME}] Non-interactive check: switch channel as above, then re-run preflight to validate visibility of target ${target_version}."
+                fi
         fi
 
         log_error "[${RULE_NAME}] Upgrade path to target OCP ${target_version} is not visible in 'oc adm upgrade' output (current OCP: ${current_ocp:-unknown})."
