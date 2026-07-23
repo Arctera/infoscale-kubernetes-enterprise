@@ -24,10 +24,6 @@
 # accordance with the terms of this Agreement. $
 #
 
-# --- artifact header ---
-# name: infoscale-tools-v<version>
-# destination: /preflight/preflight-rules
-# --- end ---
 
 set -euo pipefail
 
