@@ -1,7 +1,3 @@
-# --- artifact header ---
-# name: infoscale-tools-v<version>
-# destination: /preflight/lib/data
-# --- end ---
 {
   "ike_ocp_compatibility": [
     {
