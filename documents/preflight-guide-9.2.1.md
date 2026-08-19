@@ -31,7 +31,7 @@ The CLI checks its own dependencies at startup and exits early if a required too
 
 ## Downloading the Pre-flight CLI
 
-The Pre-flight CLI is distributed from the InfoScale Kubernetes Enterprise repository (branch `IKE-9.2.1`, path `scripts/preflight-9.2.1/`). This is a **private repository** in the `Arctera` GitHub org, so you need repository access.
+The Pre-flight CLI is distributed from the InfoScale Kubernetes Enterprise repository (branch `IKE-9.2.1`, path `scripts/preflight-9.2.1/`). This is a **public repository** in the `Arctera` GitHub org, so no token or authentication is required to download it.
 
 **Option A — clone the branch (SSH, works out of the box with repo access):**
 
@@ -52,17 +52,22 @@ cd scripts/preflight-9.2.1
 chmod +x preflight-cli.sh
 ```
 
-**Option C — download as a ZIP (no git; requires a token for the private repo):**
+**Option C — download as a ZIP with curl or wget (no git, no token):**
 
 ```bash
-curl -L -H "Authorization: token <YOUR_PAT>" -o preflight-9.2.1.zip \
+# curl
+curl -L -o preflight-9.2.1.zip \
   https://github.com/Arctera/infoscale-kubernetes-enterprise/archive/refs/heads/IKE-9.2.1.zip
+
+# or wget
+wget -O preflight-9.2.1.zip \
+  https://github.com/Arctera/infoscale-kubernetes-enterprise/archive/refs/heads/IKE-9.2.1.zip
+
 unzip preflight-9.2.1.zip
 cd infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1
 chmod +x preflight-cli.sh
 ```
 
-> **Note:** The HTTPS clone form (`https://github.com/Arctera/...`) prompts for credentials or a Personal Access Token (PAT) because the repository is private. The SSH form is recommended if your key already has access.
 
 The downloaded folder contains:
 
