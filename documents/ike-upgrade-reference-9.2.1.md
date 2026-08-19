@@ -1,5 +1,7 @@
 # InfoScale Kubernetes Enterprise (IKE) 9.2.1 Upgrade Guide
 
+> ⚠️ **Disclaimer:** A standalone software (IKE) upgrade from **9.1.0 → 9.2.1 is not supported**. For this source-to-target, only a [Combined Upgrade](#combined-upgrade) is supported (software upgrade merged with the platform/OCP upgrade). Do not attempt a software-only upgrade for 9.1.0 → 9.2.1.
+
 ## Topics
 
 - [Overview](#overview)
@@ -45,14 +47,6 @@ Update the CR version to match the target InfoScale release to begin the cluster
 - Clear all errors or pending remediations flagged by the Pre-flight CLI. The Pre-flight CLI is distributed from the InfoScale Kubernetes Enterprise repository (branch `IKE-9.2.1`, path `scripts/preflight-9.2.1/`). See the [Preflight guide for InfoScale upgrade and fresh install](https://github.com/Arctera/infoscale-kubernetes-enterprise/blob/IKE-9.2.1/documents/preflight-guide-9.2.1.md) for download and setup.
 
 > **Note:** Verify the InfoScale support matrix before you choose your OpenShift cluster upgrade version.
-
-Download and prepare the Pre-flight CLI (private repository — requires access to the `Arctera` GitHub org):
-
-```bash
-git clone -b IKE-9.2.1 git@github.com:Arctera/infoscale-kubernetes-enterprise.git
-cd infoscale-kubernetes-enterprise/scripts/preflight-9.2.1
-chmod +x preflight-cli.sh
-```
 
 Run preflight in non-interactive mode before starting the upgrade:
 
@@ -105,13 +99,15 @@ The number of keys should match: `number of nodes × number of paths per disk`.
 
 8. Review the details list. Click **Approve** to proceed with the upgrade.
 
-> **Note:** The operator upgrade may require multiple steps (hops) depending on your current version. For example, an upgrade from version 9.1.0 to 9.2.1 must follow this path: `9.1.0 > 9.1.2 > 9.1.3 > 9.2.0 > 9.2.1`. Upgrading from 9.2.0 to 9.2.1 only requires one hop.
+> **Note:** The operator upgrade may require multiple steps (hops) depending on your current version. For example, an upgrade from version 8.0.400 to 9.2.1 must follow this path: `8.0.410 > 9.1.0 > 9.1.2 > 9.2.0 > 9.2.1`. Upgrading from 9.2.0 to 9.2.1 only requires one hop.
 
 9. Wait until the upgrade is complete and the operator is listed in **Operators > Installed Operators**.
 
 ---
 
 ## InfoScale Cluster Version Upgrade (Software Upgrade)
+
+> **Important:** A standalone software (IKE) upgrade from **9.1.0 → 9.2.1 is not supported**. For this source-to-target, only a [Combined Upgrade](#combined-upgrade) is supported (software upgrade merged with the platform/OCP upgrade). Do not attempt a software-only upgrade for 9.1.0 → 9.2.1.
 
 To upgrade the InfoScale cluster version:
 
@@ -182,6 +178,8 @@ The upgrade sanity monitoring process serves as a protective guard during softwa
 ## Combined Upgrade
 
 Combined upgrade allows users to merge a software upgrade with a platform upgrade (such as an OCP upgrade) into a **single rollout**. This is highly recommended because it minimizes worker node reboots by requiring only one rollout instead of two.
+
+> **Note:** For upgrades from **9.1.0 → 9.2.1**, combined upgrade is the **only supported path** — a standalone software upgrade is not supported for this source-to-target.
 
 **Prerequisites:**
 - Standard pre-flight requirements for any upgrade must be met.
