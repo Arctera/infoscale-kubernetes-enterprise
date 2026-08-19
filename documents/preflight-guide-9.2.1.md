@@ -106,13 +106,6 @@ wget -q -O ./lib/data/upgrade_paths.json \
 
 > **Note:** The preflight CLI also refreshes this matrix automatically on startup from the same URL, and falls back to the bundled local `lib/data/upgrade_paths.json` if the download is unavailable.
 
-### Supported versions for IKE 9.2.1
-
-| Platform / Configuration | Version |
-| --- | --- |
-| OpenShift Container Platform (OCP) | 4.19.11, 4.19.16, 4.19.22, 4.19.23, 4.19.24, 4.19.25<br>4.20.3, 4.20.8, 4.20.10, 4.20.14, 4.20.15<br>4.20.20, 4.20.22, 4.20.23, 4.20.24<br>4.21.0, 4.21.2, 4.21.3, 4.21.8<br>4.21.11, 4.21.15, 4.21.16, 4.21.17 |
-| Kubernetes | 1.34.3 on RHEL 9.4 |
-| Red Hat Cert Manager | Cert Manager v1.18.0 or later for OCP 4.18.x, 4.19.x, 4.20.x, 4.21.x, 4.22.x |
 
 > **Note:** The preflight CLI evaluates OCP compatibility from `upgrade_paths.json` as version ranges (per OCP minor: a maximum supported patch plus explicit exceptions), so it may accept newer patch releases than those enumerated above. Always cross-check against the official InfoScale support matrix for the definitive qualified versions.
 
@@ -135,47 +128,63 @@ Interactive mode is also available: run `./preflight-cli.sh` without flags and s
 ### Example output
 
 ```
-[root@bastion preflight]# ./preflight-cli.sh --type fresh-install --target-ike 9.2.1
-
+[root@bastion preflight-9.2.1]# ./preflight-cli.sh --type fresh-install --target-ike 9.2.1
+[INFO]  Verifying required CLI dependencies...
+[INFO]  All dependencies verified successfully.
+[INFO]  Refreshed upgrade_paths.json from https://raw.githubusercontent.com/Arctera/infoscale-kubernetes-enterprise/main/data/upgrade_paths.json.
 [INFO]  ==============================================================
-[INFO]   Preflight Check - Tue Jun 16 14:30:15 IST 2026
+[INFO]   Preflight Check - Wed Aug 19 17:18:27 IST 2026
 [INFO]   Installation Type : fresh-install
-[INFO]   Target IKE        : 9.2.1
+[INFO]   Target OCP        :
+[INFO]   Target Infoscale  : 9.2.1
 [INFO]  ==============================================================
-[INFO]  Selected rules    : 01-platform (default for fresh-install)
+[INFO]  Using rules from /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/preflight-rules
+[INFO]   Selected rules    : 01-platform (default for fresh-install)
+[INFO]  Loading rule: 01-platform.sh
+[INFO]  [Platform] Running configuration phase...
+[INFO]  [Platform] Current OCP version detected: 4.22.6
+[INFO]  [Platform] Configuration phase completed successfully.
 [INFO]  Skipping rule (mode/selection filter): 02-ike-versions.sh
 [INFO]  Skipping rule (mode/selection filter): 03-sourceclust.sh
 [INFO]  Skipping rule (mode/selection filter): 04-workload-sanity.sh
-
+[INFO]  Executing: 01-platform.sh
 -----------------------------------------------------------------------------------------------------
 [Platform]
 -----------------------------------------------------------------------------------------------------
-[INFO]  [Platform] Current OCP version: 4.18.32
-[INFO]  [Platform] Target IKE version : 9.2.1
-[INFO]  [Platform] IKE version 9.2.1 is supported on current OCP 4.18.32 for fresh install
+[INFO]  [Platform] Executing platform validation checks...
+[INFO]  [Platform] Fresh install mode: skipping InfoScale Cluster resource presence check
+[INFO]  [Platform] Evaluating fresh-install prerequisites...
+[WARN]  [Platform] IKE version 9.2.1 is already installed on this cluster.
+[WARN]  [Platform] Installed IKE is already at latest available version (9.2.1).
+[WARN]  [Platform] Fresh-install mode selected, so compatibility check is skipped for existing installation.
+[INFO]  [Platform] Skipping OCP version alignment check (no target OCP provided)
+[INFO]  [Platform] Skipping target OCP support check (no target OCP provided)
+[INFO]  [Platform] Checking ClusterOperator health...
 [INFO]  [Platform] All ClusterOperators are healthy and stable.
+[INFO]  [Platform] Checking kubelet config status...
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-1.example.com.
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-2.example.com.
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-3.example.com.
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-4.example.com.
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-5.example.com.
 [INFO]  [Platform] Expected kubelet config is applied and rolled out.
-[INFO]  [Platform] All worker nodes: NTP is synced (Leap status Normal)
+[INFO]  [Platform] Checking NTP sync status on worker nodes...
+[INFO]  [Platform] worker-1.example.com: NTP is synced (Leap status Normal)
+[INFO]  [Platform] worker-2.example.com: NTP is synced (Leap status Normal)
+[INFO]  [Platform] worker-3.example.com: NTP is synced (Leap status Normal)
+[INFO]  [Platform] worker-4.example.com: NTP is synced (Leap status Normal)
+[INFO]  [Platform] worker-5.example.com: NTP is synced (Leap status Normal)
+[INFO]  [Platform] Checking allowed image registries...
 [INFO]  [Platform] All expected registries are configured correctly.
-[ERROR] [Platform] Detected node(s) that are both master/control-plane and worker (schedulable master):
-   - master-0.example.com
-   - master-1.example.com
-   - master-2.example.com
-[ERROR] [Platform] With masters schedulable, InfoScale workloads may co-locate with OpenShift
-         control-plane components on the same node.
-[ERROR] [Platform] This can cause port conflicts between InfoScale services and control-plane
-         components (controller-manager).
-[ERROR] [Platform] Recommendation: dedicate worker-only nodes for InfoScale, or verify InfoScale
-         port ranges do not overlap with control-plane bindings before proceeding.
+[INFO]  [Platform] All platform checks passed successfully.
 
 ========== PRE-FLIGHT SUMMARY ==========
-01-platform.sh : Some checks failed
+01-platform.sh : All checks passed
 ========================================
-
-All output saved to:  /infoscale-tools-v9.2.1/preflight/logs/preflight-20260616-143007/preflight.log
-VxREST logs saved to: /infoscale-tools-v9.2.1/preflight/logs/preflight-20260616-143007/consolidated_vxrest_logs.log
-Run log directory:    /infoscale-tools-v9.2.1/preflight/logs/preflight-20260616-143007
-Run log archive:      /infoscale-tools-v9.2.1/preflight/logs/preflight-20260616-143007.zip
+[INFO]  All output saved to: /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/logs/preflight-20260819-171827/preflight.log
+[INFO]  VxREST logs saved to: /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/logs/preflight-20260819-171827/consolidated_vxrest_logs.log
+[INFO]  Run log directory: /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/logs/preflight-20260819-171827
+[INFO]  Run log archive : /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/logs/preflight-20260819-171827.zip
 ```
 
 ### Log save location
@@ -206,7 +215,6 @@ All findings in fresh install mode come from `01-platform.sh`. These same platfo
 | Kubelet inhibitor config not applied or rollout not visible on workers | `[ERROR] [Platform] Expected kubelet config is not applied.` or `[ERROR] [Platform] Kubelet config reports Success, but rollout is not visible on worker node.` | Apply the required kubelet configuration (shutdownGracePeriod: 15m, shutdownGracePeriodCriticalPods: 5m) and wait for the MachineConfig rollout to complete on all worker nodes. Refer to the Prerequisites section of the InfoScale for Kubernetes 9.2.1 Administrator's Guide. |
 | NTP not synced on worker node | `[WARN] [Platform] <node>: NTP may not be synced` | Verify chrony/NTP configuration: `chronyc tracking`. Ensure the node can reach its NTP source. |
 | Expected registries missing | `[WARN] [Platform] Missing expected registries:` followed by list | Configure missing registries. |
-| Schedulable master nodes detected | `[ERROR] [Platform] Detected node(s) that are both master/control-plane and worker (schedulable master):` followed by list | If masters must remain schedulable, ensure master nodes are **not** included in the InfoScaleCluster CR. |
 
 ### Pre-install checklist
 
@@ -246,6 +254,142 @@ Navigate to the preflight directory and run:
 `--all` runs all applicable rules and is recommended for a thorough pre-upgrade check.
 
 Interactive mode is also available: run `./preflight-cli.sh` without flags and select **1) Upgrade** when prompted.
+
+### Example output
+
+```
+[root@bastion preflight-9.2.1]# ./preflight-cli.sh --type upgrade --target-ike 9.2.1 --target-ocp 4.22.8 --all
+[INFO]  Verifying required CLI dependencies...
+[INFO]  All dependencies verified successfully.
+curl: (28) Connection timed out after 5000 milliseconds
+[WARN]  Failed to download upgrade_paths.json from https://raw.githubusercontent.com/Arctera/infoscale-kubernetes-enterprise/main/data/upgrade_paths.json; using existing local file.
+[INFO]  ==============================================================
+[INFO]   Preflight Check - Wed Aug 19 17:11:34 IST 2026
+[INFO]   Installation Type : upgrade
+[INFO]   Target OCP        : 4.22.8
+[INFO]   Target Infoscale  : 9.2.1
+[INFO]  ==============================================================
+[INFO]  Using rules from /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/preflight-rules
+[INFO]   Selected rules    : all applicable rules
+[INFO]  Loading rule: 01-platform.sh
+[INFO]  [Platform] Running configuration phase...
+[INFO]  [Platform] Current OCP version detected: 4.22.6
+[INFO]  [Platform] Configuration phase completed successfully.
+[INFO]  Loading rule: 02-ike-versions.sh
+[INFO]  [IKE & OCP Upgrade Compatibility] Configuration successful
+[INFO]  Loading rule: 03-sourceclust.sh
+[INFO]  [IKE Source Cluster Health] InfoScale Cluster resource found.
+[INFO]  [IKE Source Cluster Health] Configuration successful
+[INFO]  Loading rule: 04-workload-sanity.sh
+[INFO]  [Workload Sanity] Configuration successful
+[INFO]  Executing: 01-platform.sh
+-----------------------------------------------------------------------------------------------------
+[Platform]
+-----------------------------------------------------------------------------------------------------
+[INFO]  [Platform] Executing platform validation checks...
+[INFO]  [Platform] InfoScale Cluster resource is found
+[INFO]  [Platform] Skipping fresh install compatibility check (upgrade mode)
+[INFO]  [Platform] Detected OCP version 4.22.6; upgrade target is 4.22.8.
+[INFO]  [Platform] Cluster already at requested IKE version (9.2.1).
+[INFO]  [Platform] Target OCP version 4.22.8 is offered by oc adm upgrade.
+[INFO]  [Platform] Checking ClusterOperator health...
+[INFO]  [Platform] All ClusterOperators are healthy and stable.
+[INFO]  [Platform] Checking kubelet config status...
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-1.eng.internal.
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-2.eng.internal.
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-3.eng.internal.
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-4.eng.internal.
+[INFO]  [Platform] Kubelet rollout for inhibitor (shutdown/delay) is completed on node worker-5.eng.internal.
+[INFO]  [Platform] Expected kubelet config is applied and rolled out.
+[INFO]  [Platform] Checking NTP sync status on worker nodes...
+[INFO]  [Platform] worker-1.eng.internal: NTP is synced (Leap status Normal)
+[INFO]  [Platform] worker-2.eng.internal: NTP is synced (Leap status Normal)
+[INFO]  [Platform] worker-3.eng.internal: NTP is synced (Leap status Normal)
+[INFO]  [Platform] worker-4.eng.internal: NTP is synced (Leap status Normal)
+[INFO]  [Platform] worker-5.eng.internal: NTP is synced (Leap status Normal)
+[INFO]  [Platform] Checking allowed image registries...
+[INFO]  [Platform] All expected registries are configured correctly.
+[INFO]  [Platform] All platform checks passed successfully.
+[INFO]  Executing: 02-ike-versions.sh
+-----------------------------------------------------------------------------------------------------
+[IKE & OCP Upgrade Compatibility]
+-----------------------------------------------------------------------------------------------------
+[INFO]  [IKE & OCP Upgrade Compatibility] Running upgrade compatibility checks
+[INFO]  [IKE & OCP Upgrade Compatibility] Validating OCP and IKE upgrade compatibility
+[INFO]  [IKE & OCP Upgrade Compatibility] IKE 9.2.1 is supported on OCP 4.22.8
+[WARN]  [IKE & OCP Upgrade Compatibility] Current IKE version (9.2.1) is the same as target version (9.2.1). No IKE upgrade required.
+[INFO]  [IKE & OCP Upgrade Compatibility] All upgrade compatibility checks passed
+[INFO]  Executing: 03-sourceclust.sh
+-----------------------------------------------------------------------------------------------------
+[IKE Source Cluster Health]
+-----------------------------------------------------------------------------------------------------
+[INFO]  [IKE Source Cluster Health] InfoScale Cluster resource has been found going ahead with further checks
+[INFO]  [IKE Source Cluster Health] Checking InfoScale Cluster resource status
+----------------------------------------
+[INFO]  [IKE Source Cluster Health] Namespace: infoscale-vtas
+[INFO]  [IKE Source Cluster Health] Name    : kubeburner
+[INFO]  [IKE Source Cluster Health] Version : 9.2.1
+[INFO]  [IKE Source Cluster Health] State   : Running
+[INFO]  [IKE Source Cluster Health] Status  : Healthy
+[INFO]  [IKE Source Cluster Health] Cluster State  : Healthy
+[INFO]  [IKE Source Cluster Health] Diskgroup      : imported
+[INFO]  [IKE Source Cluster Health] Shared Storage : true
+[INFO]  [IKE Source Cluster Health] Checking node join status
+----------------------------------------
+[INFO]  [IKE Source Cluster Health] Node worker-5.eng.internal joined
+[INFO]  [IKE Source Cluster Health] Node worker-4.eng.internal joined
+[INFO]  [IKE Source Cluster Health] Node worker-2.eng.internal joined
+[INFO]  [IKE Source Cluster Health] Node worker-1.eng.internal joined
+[INFO]  [IKE Source Cluster Health] Node worker-3.eng.internal joined
+[INFO]  [IKE Source Cluster Health] Checking spec/status consistency for fencing devices
+----------------------------------------
+[INFO]  [IKE Source Cluster Health] infoscale-vtas/kubeburner: fencing path '/dev/disk/by-path/pci-0000:3b:00.1-fc-0x201bd039eabae0fc-lun-4' resolved to 'sdr' and is in coordinator DG on node worker-3.eng.internal
+[INFO]  [IKE Source Cluster Health] Spec and status are consistent for fencing devices
+[INFO]  [IKE Source Cluster Health] Checking InfoScale Volumes/Disks/Diskgroup health inside SDS pods
+----------------------------------------
+[INFO]  [IKE Source Cluster Health] InfoScale Pod infoscale-sds-21432-db5bd5283e0cd0ef-2hwf7 on node worker-2.eng.internal has status Running
+[INFO]  [IKE Source Cluster Health] Diskgroup is imported in pod infoscale-sds-21432-db5bd5283e0cd0ef-2hwf7
+[INFO]  [IKE Source Cluster Health] All volumes are enabled/active in pod infoscale-sds-21432-db5bd5283e0cd0ef-2hwf7
+[INFO]  [IKE Source Cluster Health] No active VxVM tasks in pod infoscale-sds-21432-db5bd5283e0cd0ef-2hwf7
+[INFO]  [IKE Source Cluster Health] No snapres->snap child/parent associations detected in pod infoscale-sds-21432-db5bd5283e0cd0ef-2hwf7 on node worker-2.eng.internal
+[INFO]  [IKE Source Cluster Health] All disks are good inside pod infoscale-sds-21432-db5bd5283e0cd0ef-2hwf7
+[INFO]  [IKE Source Cluster Health] Checking for split brain condition
+[INFO]  [IKE Source Cluster Health] Using InfoScaleCluster 'kubeburner' for pod infoscale-sds-21432-db5bd5283e0cd0ef-2hwf7 on node worker-2.eng.internal; expected node count = 5
+[INFO]  [IKE Source Cluster Health] Disk infoscal0_11: All nodes properly registered with known names (keys=10, nodes=5)
+[INFO]  [IKE Source Cluster Health] Capturing VxREST logs from pod infoscale-sds-21432-db5bd5283e0cd0ef-2hwf7
+... (per-pod checks repeat for each SDS pod) ...
+[INFO]  [IKE Source Cluster Health] All IKE cluster health  checks passed
+[INFO]  Executing: 04-workload-sanity.sh
+-----------------------------------------------------------------------------------------------------
+[Workload Sanity]
+-----------------------------------------------------------------------------------------------------
+[INFO]  [Workload Sanity] Collecting manifest snapshots and get output under /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/logs/preflight-20260819-171128/manifests
+[INFO]  [Workload Sanity] Collecting workload distribution info...
+[INFO]  [Workload Sanity] Checking PVC status across all namespaces...
+[INFO]  [Workload Sanity] Checking workloads using InfoScale CSI with priority higher than CSI node
+[INFO]  [Workload Sanity] No workloads were found that can block InfoScale CSI node eviction.
+[INFO]  [Workload Sanity] Checking image-registry deployment PVC backing...
+[INFO]  [Workload Sanity] image-registry deployment not found or no PVC attached; assuming already scaled down or non-PVC configuration
+[INFO]  [Workload Sanity] Checking pods for blocking states (Pending/ContainerCreating/CrashLoopBackOff)...
+[INFO]  [Workload Sanity] Checking for Failed Virtual Machine Instances...
+[INFO]  [Workload Sanity] Checking Infoscale PVC-backed VMs for RWX & LiveMigratable...
+[INFO]  [Workload Sanity] Checking VirtualMachines workloads for hostPath-backed storage, node-affined placement, and anti-affinity...
+[INFO]  [Workload Sanity] Checking Kubernetes workloads for single-node affinity or placement locks...
+[INFO]  [Workload Sanity] All workloads have multi-node availability
+
+========== PRE-FLIGHT SUMMARY ==========
+04-workload-sanity.sh : All checks passed
+03-sourceclust.sh : All checks passed
+01-platform.sh : All checks passed
+02-ike-versions.sh : All checks passed
+========================================
+[INFO]  All output saved to: /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/logs/preflight-20260819-171128/preflight.log
+[INFO]  VxREST logs saved to: /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/logs/preflight-20260819-171128/consolidated_vxrest_logs.log
+[INFO]  Run log directory: /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/logs/preflight-20260819-171128
+[INFO]  Run log archive : /root/preflight/infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/logs/preflight-20260819-171128.zip
+```
+
+> **Note:** The `curl: (28) Connection timed out` / `Failed to download upgrade_paths.json` lines are harmless — the CLI simply falls back to the bundled local matrix when it cannot reach GitHub (for example on air-gapped or restricted networks).
 
 ### Log save location
 
