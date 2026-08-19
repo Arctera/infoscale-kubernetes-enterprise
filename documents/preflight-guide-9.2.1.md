@@ -1,196 +1,349 @@
 # Preflight guide for InfoScale upgrade and fresh install
 
-The Pre-flight CLI validates that an OpenShift cluster is ready for an InfoScale Kubernetes Enterprise (IKE) upgrade or fresh install. It runs a set of rule scripts (platform, IKE versions, source-cluster, workload sanity) and reports a pass/fail summary plus detailed logs.
-
-## Topics
-
-- [Prerequisites](#prerequisites)
-- [Downloading the Pre-flight CLI](#downloading-the-pre-flight-cli)
-- [Command reference](#command-reference)
-- [Rules](#rules)
-- [Running the CLI](#running-the-cli)
-- [Example output](#example-output)
-- [Logs and artifacts](#logs-and-artifacts)
-- [Interpreting results](#interpreting-results)
+Run preflight checks before an InfoScale upgrade or fresh installation to identify potential issues early and prevent unexpected disruption during maintenance.
 
 ---
 
-## Prerequisites
+## Downloading the preflight tool
 
-Run the CLI from a host that can reach the OpenShift cluster (for example, the bastion) with a logged-in `oc`/`kubectl` context.
+The preflight tool is available at:
+[https://github.com/Arctera/infoscale-kubernetes-enterprise/tree/IKE-9.2.1/scripts/preflight-9.2.1](https://github.com/Arctera/infoscale-kubernetes-enterprise/tree/IKE-9.2.1/scripts/preflight-9.2.1)
 
-- **Bash** — the script must run in a Bash shell. If you use a different shell, switch to Bash.
-- **jq** — required for parsing the upgrade matrix and cluster data.
-- **oc** or **kubectl** — with an active session to the target cluster.
-- **curl** or **wget** — optional; used to refresh the upgrade matrix (`upgrade_paths.json`) from GitHub. If neither is present, the bundled local matrix is used.
-- **git** — to download the CLI (see below), or use the ZIP option if git is unavailable.
+Choose the option that best fits your environment. (This is a public repository — no token or authentication is required.)
 
-The CLI checks its own dependencies at startup and exits early if a required tool is missing.
+### Option 1 — Bundled with the InfoScale tools package
 
----
+If you have the InfoScale tools package, the preflight tool is already included. Navigate directly to the preflight directory:
 
-## Downloading the Pre-flight CLI
+```
+cd /infoscale-tools-v<version>/preflight
+```
 
-The Pre-flight CLI is distributed from the InfoScale Kubernetes Enterprise repository (branch `IKE-9.2.1`, path `scripts/preflight-9.2.1/`). This is a **public repository** in the `Arctera` GitHub org, so no token or authentication is required to download it.
+No additional download is needed.
 
-**Option A — clone the branch (SSH, works out of the box with repo access):**
+### Option 2 — Download via curl or wget
 
-```bash
-git clone -b IKE-9.2.1 git@github.com:Arctera/infoscale-kubernetes-enterprise.git
-cd infoscale-kubernetes-enterprise/scripts/preflight-9.2.1
+Download the repository as a ZIP archive and extract only the preflight directory. No git required.
+
+**Using curl:**
+
+```
+curl -fsSL https://github.com/Arctera/infoscale-kubernetes-enterprise/archive/refs/heads/IKE-9.2.1.zip \
+  -o infoscale-ike.zip
+unzip infoscale-ike.zip "infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/*" -d .
+mv infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1 ./preflight
+rm -rf infoscale-ike.zip infoscale-kubernetes-enterprise-IKE-9.2.1
+cd preflight
 chmod +x preflight-cli.sh
 ```
 
-**Option B — sparse checkout (download only the preflight folder):**
+**Using wget:**
 
-```bash
-git clone --depth 1 --filter=blob:none --sparse -b IKE-9.2.1 \
-  git@github.com:Arctera/infoscale-kubernetes-enterprise.git
-cd infoscale-kubernetes-enterprise
-git sparse-checkout set scripts/preflight-9.2.1
-cd scripts/preflight-9.2.1
+```
+wget -q https://github.com/Arctera/infoscale-kubernetes-enterprise/archive/refs/heads/IKE-9.2.1.zip \
+  -O infoscale-ike.zip
+unzip infoscale-ike.zip "infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1/*" -d .
+mv infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1 ./preflight
+rm -rf infoscale-ike.zip infoscale-kubernetes-enterprise-IKE-9.2.1
+cd preflight
 chmod +x preflight-cli.sh
 ```
 
-**Option C — download as a ZIP with curl or wget (no git, no token):**
+### Option 2 — Air-gapped / no internet access
 
-```bash
-# curl
-curl -L -o preflight-9.2.1.zip \
-  https://github.com/Arctera/infoscale-kubernetes-enterprise/archive/refs/heads/IKE-9.2.1.zip
+If the target machine has no internet access:
 
-# or wget
-wget -O preflight-9.2.1.zip \
-  https://github.com/Arctera/infoscale-kubernetes-enterprise/archive/refs/heads/IKE-9.2.1.zip
+1. On an internet-connected machine, use Option 1 or Option 2 to obtain the `preflight/` directory.
+2. Transfer it to the target machine via SCP, USB, or your internal file transfer method.
 
-unzip preflight-9.2.1.zip
-cd infoscale-kubernetes-enterprise-IKE-9.2.1/scripts/preflight-9.2.1
+---
+
+## Make the script executable
+
+After downloading, ensure the script has execute permission:
+
+```
 chmod +x preflight-cli.sh
 ```
 
-
-The downloaded folder contains:
+## Directory structure
 
 ```
-preflight-9.2.1/
-├── preflight-cli.sh          # entry point
-├── lib/                      # helper libraries + data/ (upgrade_paths.json, document_links.json)
-└── preflight-rules/          # rule scripts (01-platform, 02-ike-versions, 03-sourceclust, 04-workload-sanity)
+preflight/
+├── preflight-cli.sh
+├── lib/
+│   └── data/
+│       └── upgrade_paths.json
+└── preflight-rules/
+    ├── 01-platform.sh
+    ├── 02-ike-versions.sh
+    ├── 03-sourceclust.sh
+    └── 04-workload-sanity.sh
 ```
 
 ---
 
-## Command reference
+## Upgrade compatibility matrix
+
+Download the latest upgrade compatibility matrix before each execution.
+
+**Using curl:**
 
 ```
-Usage: ./preflight-cli.sh [OPTIONS]
-
-OPTIONS:
-  --type <type>            Type of operation: 'upgrade' or 'fresh-install' (default: upgrade)
-                           If omitted, an interactive prompt is shown.
-  --target-ike <version>   Target IKE version (required for both modes; prompts if omitted)
-  --target-ocp <version>   Target OCP version (optional, upgrade mode only)
-  --rule, --rules <list>   Run only selected rule(s), comma-separated.
-                           Accepts rule name(s) (with or without .sh) and/or rule number(s).
-                           If omitted and stdin is interactive, a prompt is shown.
-  --all                    Run all applicable rules (skips the interactive rule prompt)
-  -h, --help               Show help
+curl -fsSL \
+  https://raw.githubusercontent.com/Arctera/infoscale-kubernetes-enterprise/main/data/upgrade_paths.json \
+  -o ./lib/data/upgrade_paths.json
 ```
 
-Notes:
-- On startup the CLI refreshes `upgrade_paths.json` from GitHub (falls back to the bundled local copy if the download fails or the schema check fails).
-- Optional environment variables: `WRITE_RESULTS_TSV=true` and `WRITE_RESULTS_JSON=true` write machine-readable result files into the run log directory.
+**Using wget:**
+
+```
+wget -q -O ./lib/data/upgrade_paths.json \
+  https://raw.githubusercontent.com/Arctera/infoscale-kubernetes-enterprise/main/data/upgrade_paths.json
+```
+
+**No internet access?** Download the file from an internet-connected machine and transfer it to `lib/data/upgrade_paths.json` before running the preflight check.
+
+> **Note:** The preflight CLI also refreshes this matrix automatically on startup from the same URL, and falls back to the bundled local `lib/data/upgrade_paths.json` if the download is unavailable.
 
 ---
 
-## Rules
+## Fresh Install
 
-| # | Rule | Description | Runs in |
-|---|------|-------------|---------|
-| 1 | `01-platform` | Platform readiness: machine-config/kubelet-config status, NTP sync, master-schedulable check, allowed image registries, etc. | upgrade + fresh-install |
-| 2 | `02-ike-versions` | Validates the source→target IKE version path against the upgrade matrix. | upgrade |
-| 3 | `03-sourceclust` | Source InfoScale cluster health (state, split-brain, stale snapshots, etc.). | upgrade |
-| 4 | `04-workload-sanity` | Workload readiness for a no-downtime rollout (managed/affined workloads, PDBs, etc.). | upgrade |
+Run preflight before a fresh InfoScale installation to verify the platform meets all prerequisites. Only `01-platform.sh` runs in fresh install mode — upgrade-specific rules are skipped automatically.
 
-**Mode behavior:**
-- **`upgrade`** runs all four rules by default (or the subset you pass via `--rule`).
-- **`fresh-install`** runs only `01-platform` and ignores `--rule`/`--rules`/`--all`.
+### Running fresh install preflight
 
----
+Navigate to the preflight directory and run:
 
-## Running the CLI
-
-**Upgrade (non-interactive, all rules):**
-
-```bash
-./preflight-cli.sh --type upgrade --target-ike 9.2.1 --target-ocp 4.20.22 --all
 ```
-
-**Fresh install (only platform checks; always needs the target IKE version):**
-
-```bash
 ./preflight-cli.sh --type fresh-install --target-ike 9.2.1
 ```
 
-**Run specific rules by name or number:**
+Interactive mode is also available: run `./preflight-cli.sh` without flags and select **2) Fresh Install** when prompted.
 
-```bash
-./preflight-cli.sh --type upgrade --target-ike 9.2.1 --rule 01-platform,03-sourceclust
-./preflight-cli.sh --type upgrade --target-ike 9.2.1 --rule 1,3
+### Example output
+
 ```
+[root@bastion preflight]# ./preflight-cli.sh --type fresh-install --target-ike 9.2.1
 
-**Interactive mode (prompts for type, versions, and rules):**
+[INFO]  ==============================================================
+[INFO]   Preflight Check - Tue Jun 16 14:30:15 IST 2026
+[INFO]   Installation Type : fresh-install
+[INFO]   Target IKE        : 9.2.1
+[INFO]  ==============================================================
+[INFO]  Selected rules    : 01-platform (default for fresh-install)
+[INFO]  Skipping rule (mode/selection filter): 02-ike-versions.sh
+[INFO]  Skipping rule (mode/selection filter): 03-sourceclust.sh
+[INFO]  Skipping rule (mode/selection filter): 04-workload-sanity.sh
 
-```bash
-./preflight-cli.sh
-```
+-----------------------------------------------------------------------------------------------------
+[Platform]
+-----------------------------------------------------------------------------------------------------
+[INFO]  [Platform] Current OCP version: 4.18.32
+[INFO]  [Platform] Target IKE version : 9.2.1
+[INFO]  [Platform] IKE version 9.2.1 is supported on current OCP 4.18.32 for fresh install
+[INFO]  [Platform] All ClusterOperators are healthy and stable.
+[INFO]  [Platform] Expected kubelet config is applied and rolled out.
+[INFO]  [Platform] All worker nodes: NTP is synced (Leap status Normal)
+[INFO]  [Platform] All expected registries are configured correctly.
+[ERROR] [Platform] Detected node(s) that are both master/control-plane and worker (schedulable master):
+   - master-0.example.com
+   - master-1.example.com
+   - master-2.example.com
+[ERROR] [Platform] With masters schedulable, InfoScale workloads may co-locate with OpenShift
+         control-plane components on the same node.
+[ERROR] [Platform] This can cause port conflicts between InfoScale services and control-plane
+         components (controller-manager).
+[ERROR] [Platform] Recommendation: dedicate worker-only nodes for InfoScale, or verify InfoScale
+         port ranges do not overlap with control-plane bindings before proceeding.
 
-> **Version note:** `--target-ike` is the InfoScale version you are moving to. Use the value that matches your target release and support matrix. The download branch/folder is named `IKE-9.2.1` / `preflight-9.2.1`; make sure the `--target-ike` you pass is a valid version in the upgrade matrix (the CLI lists valid versions if you pass an invalid one).
-
----
-
-## Example output
-
-```text
-==============================================================
- Preflight Check - <timestamp>
- Installation Type : upgrade
- Target OCP        : 4.20.22
- Target Infoscale  : 9.2.1
-==============================================================
-...
 ========== PRE-FLIGHT SUMMARY ==========
-04-workload-sanity.sh : All checks passed
-03-sourceclust.sh : All checks passed
-01-platform.sh : All checks passed
-02-ike-versions.sh : All checks passed
+01-platform.sh : Some checks failed
 ========================================
-[INFO]  All output saved to: .../logs/preflight-20260317-095735/preflight.log
+
+All output saved to:  /infoscale-tools-v9.2.1/preflight/logs/preflight-20260616-143007/preflight.log
+VxREST logs saved to: /infoscale-tools-v9.2.1/preflight/logs/preflight-20260616-143007/consolidated_vxrest_logs.log
+Run log directory:    /infoscale-tools-v9.2.1/preflight/logs/preflight-20260616-143007
+Run log archive:      /infoscale-tools-v9.2.1/preflight/logs/preflight-20260616-143007.zip
 ```
+
+### Log save location
+
+Logs are saved under the directory where the preflight tool is located:
+
+| File | Contents |
+| --- | --- |
+| preflight.log | Full run output with all checks |
+| consolidated_vxrest_logs.log | VxREST API logs collected from SDS pods |
+| Run directory | Timestamps and manifests saved during the run |
+| Zip archive | Compressed copy of the run directory |
+
+To search the log for errors:
+
+```
+grep -E "\[ERROR\]|\[WARN\]" /infoscale-tools-v9.2.1/preflight/logs/preflight-YYYYMMDD-HHMMSS/preflight.log
+```
+
+### Common findings and remediation (fresh install)
+
+All findings in fresh install mode come from `01-platform.sh`. These same platform findings apply during an upgrade too — see the upgrade section for additional upgrade-specific guidance.
+
+| Finding | Example output | Remediation |
+| --- | --- | --- |
+| IKE version not supported on current OCP | `[ERROR] [Platform] IKE version 9.2.1 is NOT supported on current OCP 4.15.x for fresh install` | Upgrade OCP to a version that supports the target IKE release. Refer to the InfoScale support matrix. |
+| ClusterOperator unavailable or degraded | `[ERROR] [Platform] Unavailable ClusterOperators:` followed by list, or `[ERROR] [Platform] Degraded ClusterOperators:` followed by list | Investigate: `oc get co <name>` and `oc describe co <name>`. Resolve before proceeding. |
+| Kubelet inhibitor config not applied or rollout not visible on workers | `[ERROR] [Platform] Expected kubelet config is not applied.` or `[ERROR] [Platform] Kubelet config reports Success, but rollout is not visible on worker node.` | Apply the required kubelet configuration (shutdownGracePeriod: 15m, shutdownGracePeriodCriticalPods: 5m) and wait for the MachineConfig rollout to complete on all worker nodes. Refer to the Prerequisites section of the InfoScale for Kubernetes 9.2.1 Administrator's Guide. |
+| NTP not synced on worker node | `[WARN] [Platform] <node>: NTP may not be synced` | Verify chrony/NTP configuration: `chronyc tracking`. Ensure the node can reach its NTP source. |
+| Expected registries missing | `[WARN] [Platform] Missing expected registries:` followed by list | Configure missing registries. |
+| Schedulable master nodes detected | `[ERROR] [Platform] Detected node(s) that are both master/control-plane and worker (schedulable master):` followed by list | If masters must remain schedulable, ensure master nodes are **not** included in the InfoScaleCluster CR. |
+
+### Pre-install checklist
+
+Before proceeding with a fresh install, confirm each item:
+
+* Platform checks passed (`01-platform.sh`)
+* All ClusterOperators are healthy and stable
+* Kubelet inhibitor config applied and rollout visible on all worker nodes
+* NTP synchronized across all worker nodes
+* Required image registries are accessible
+* `mastersSchedulable` is set to `false` (or InfoScale workloads are confirmed not to land on master nodes)
+
+**If all items are confirmed:** Proceed with the fresh install.
+**If any item is unresolved:** Fix those issues first, then rerun preflight.
 
 ---
 
-## Logs and artifacts
+## Upgrade
 
-Each run writes into a timestamped directory under `preflight-9.2.1/logs/`:
+Run preflight before upgrading InfoScale to identify risks across all four rule areas.
+
+| Rule file | What it checks |
+| --- | --- |
+| `01-platform.sh` | Cluster health, kubelet, NTP, registries |
+| `02-ike-versions.sh` | Upgrade compatibility matrix |
+| `03-sourceclust.sh` | Source InfoScale cluster health: split brain, disk/diskgroup/volume health, snapshot associations, fencing |
+| `04-workload-sanity.sh` | Workload and PVC readiness |
+
+### Running upgrade preflight
+
+Navigate to the preflight directory and run:
 
 ```
-logs/preflight-YYYYMMDD-HHMMSS/
-├── preflight.log                    # full stdout/stderr of the run
-├── consolidated_vxrest_logs.log     # collected VxREST logs
-├── check-results.tsv                # only if WRITE_RESULTS_TSV=true
-└── check-results.json               # only if WRITE_RESULTS_JSON=true
+./preflight-cli.sh --type upgrade --target-ike 9.2.1 --target-ocp 4.20.23 --all
 ```
 
-At the end of the run the directory is archived (`.zip` if `zip` is available, otherwise `.tar.gz`). The final log lines print the exact paths of the log file, the run log directory, and the archive — attach the archive when raising a support case.
+`--all` runs all applicable rules and is recommended for a thorough pre-upgrade check.
 
----
+Interactive mode is also available: run `./preflight-cli.sh` without flags and select **1) Upgrade** when prompted.
 
-## Interpreting results
+### Log save location
 
-- **All rules `PASS`** → the cluster is ready; proceed with the operator upgrade / software upgrade / fresh install.
-- **Any rule `FAIL`** → open `preflight.log` in the run directory, find the failing check, and remediate before proceeding. Re-run the CLI until all applicable rules pass.
-- **Config phase failure** → the run aborts early (before executing checks). Fix the reported configuration issue and re-run.
-- **Warnings** (for example, "allowed registries" empty, or matrix refresh skipped) do not stop the run but should be reviewed — some indicate a real gap, others are benign for unrestricted clusters.
+```
+All output saved to:  /infoscale-tools-v<version>/preflight/logs/preflight-YYYYMMDD-HHMMSS/preflight.log
+VxREST logs saved to: /infoscale-tools-v<version>/preflight/logs/preflight-YYYYMMDD-HHMMSS/consolidated_vxrest_logs.log
+Run log directory:    /infoscale-tools-v<version>/preflight/logs/preflight-YYYYMMDD-HHMMSS
+Run log archive:      /infoscale-tools-v<version>/preflight/logs/preflight-YYYYMMDD-HHMMSS.zip
+```
 
-Re-running preflight before the OpenShift/platform upgrade (optional) is recommended to re-confirm cluster health.
+### Checking for failures
+
+At the end of the run, review the summary:
+
+```
+========== PRE-FLIGHT SUMMARY ==========
+04-workload-sanity.sh : Some checks failed
+03-sourceclust.sh     : Some checks failed
+01-platform.sh        : All checks passed
+02-ike-versions.sh    : All checks passed
+=========================================
+```
+
+For any rule that reports **Some checks failed**, search the log:
+
+```
+grep -E "\[ERROR\]|\[WARN\]" /infoscale-tools-v9.2.1/preflight/logs/preflight-YYYYMMDD-HHMMSS/preflight.log
+```
+
+### Common findings and remediation (upgrade)
+
+#### Platform checks (`01-platform.sh`)
+
+The same platform findings and remediations apply during an upgrade. See the fresh install **Common findings and remediation** table above for the full list.
+
+**Upgrade-specific note for platform findings:**
+
+* **OCP channel:** Before initiating an OCP or combined upgrade, set the update channel to the required version:
+
+    ```
+    oc patch clusterversion version --type=merge -p '{"spec":{"channel":"stable-4.20"}}'
+    ```
+
+    Replace `stable-4.20` with the target channel (e.g., `stable-4.19`, `eus-4.18`).
+
+#### IKE version upgrade compatibility (`02-ike-versions.sh`)
+
+| Finding | Example output | Remediation |
+| --- | --- | --- |
+| IKE not supported on target OCP | `[ERROR] [IKE & OCP Upgrade Compatibility] IKE 9.2.1 is NOT supported on OCP 4.20.23` | Verify the InfoScale support matrix and select a supported OCP target version. |
+| Invalid IKE upgrade path | `[ERROR] [IKE & OCP Upgrade Compatibility] Invalid IKE upgrade path: <current> -> 9.2.1` | Follow the required intermediate hops (e.g., 8.0.400 → 8.0.410 → 9.1.0 → 9.1.2 → 9.2.0 → 9.2.1). Refer to the upgrade compatibility matrix. |
+| InfoScaleCluster CR not found | `[ERROR] [IKE & OCP Upgrade Compatibility] No infoscalecluster found` | Verify the InfoScaleCluster is deployed: `oc get infoscaleclusters -A`. |
+
+#### Source cluster checks (`03-sourceclust.sh`)
+
+| Finding | Example output | Remediation |
+| --- | --- | --- |
+| Split brain detected | `[ERROR] [IKE Source Cluster Health] Split brain DETECTED on disk <disk> in pod <pod>` followed by `[ERROR] [IKE Source Cluster Health] Expected <N> nodes but only <M> are registered with a known name` | Do not proceed. Verify SCSI reservations and cluster interconnect connectivity. Confirm whether this is a genuine split brain or a false positive (excluded disks lacking keys). Resolve fully before any upgrade activity. |
+| SCSI key node identity unknown | `[ERROR] [IKE Source Cluster Health] Disk <disk>: <N> SCSI key(s) have Node Name reported as 'Unknown'` followed by `[ERROR] [IKE Source Cluster Health] This indicates a node identity resolution failure` | Investigate SCSI registration key ownership: `vxfenadm -s /dev/vx/rdmp/<dmpnodename>`. Resolve the node identity failure before upgrading. |
+| Diskgroup not imported | `[WARN] [IKE Source Cluster Health] Diskgroup not imported in pod <pod>` | Check diskgroup status inside the SDS pod: `vxdg list`. Investigate why the diskgroup is not imported and resolve before proceeding. |
+| Disk errors detected | `[ERROR] [IKE Source Cluster Health] Disk errors detected inside pod <pod> on node <node>` | Check disk status inside the SDS pod: `vxdisk -o alldgs list`. Resolve all disk errors before proceeding. |
+| Volume in NEEDSYNC or not active/enabled | `[WARN] [IKE Source Cluster Health] Some volumes/snapshots in pod <pod> are in NEEDSYNC state` or `[WARN] [IKE Source Cluster Health] Some volumes in pod <pod> are not active/enabled` | Check volume status inside the SDS pod: `vxprint -g <dgname> -ht`. Resync: `vxvol -g <dgname> resync <volname>`. Wait for sync to complete: `vxtask list`. Do not proceed while sync is in progress. |
+| Snapshot parent-child associations found | `[WARN] [IKE Source Cluster Health] Found snapres child volumes with snap parent snapshots in pod <pod> on node <node>` followed by `[WARN] [IKE Source Cluster Health] Diskgroup: <dg> (<N> associations)` | Review and clean up snapshots inside the SDS pod: `vxsnap -g <diskgroup_name> list`. Contact InfoScale Support if associations cannot be safely removed. |
+| Fencing spec/status mismatch (shared / SCSI-3PR setup) | `[ERROR] [IKE Source Cluster Health] <ns>/<name>: fencing disks mismatch for node <node>; spec and status must match exactly in sequence` | Check fencing disk configuration: `vxfenconfig -l`. Verify the fencing disk list in the InfoScaleCluster CR spec matches the status. Resolve all mismatches before proceeding. |
+| Background VxVM tasks running | `[WARN] [IKE Source Cluster Health] Background VxVM tasks detected in pod <pod>` followed by `[WARN] [IKE Source Cluster Health] Active task : <task details>` | Wait for sync tasks to complete: `vxtask list` inside the SDS pod. Do not proceed while background tasks are active. |
+
+#### Workload sanity (`04-workload-sanity.sh`)
+
+| Finding | Block upgrade? | When safe to proceed |
+| --- | --- | --- |
+| PVC not bound | Yes | After fixing the storage misconfiguration |
+| Pod in unexpected Pending / CrashLoopBackOff / ContainerCreating state | Yes | After investigating and resolving the root cause |
+| Job using InfoScale CSI | Yes — pauses the software upgrade | Script reports: `ERROR: Job uses InfoScale CSI-backed PVC`. Remove the Job, or apply the `infoscale.veritas.com/forceMigrate=true` annotation on the `InfoScaleCluster` CR. The upgrade resumes automatically once the condition is cleared. For combined upgrade, Jobs using InfoScale CSI are not a blocking check. **Note:** If the flagged Jobs are caused by hot-plugged disks on a running VM, see the row below — stop the VM instead of deleting the Jobs directly. |
+| VM with hot-plugged disks (reported as Job using InfoScale CSI) | Yes — pauses the software upgrade; No action for combined upgrade | Kubevirt creates Job resources to manage hot-plug disk attachments. When those disks use InfoScale CSI, the script flags them as `ERROR: Job uses InfoScale CSI-backed PVC` — the same error as regular Jobs. For a software-only upgrade, **stop the VM** before proceeding. Stopping the VM removes the hot-plug attachment Jobs automatically. Do not delete the Jobs directly. For combined upgrade, no action is required. |
+| **Pod using InfoScale CSI with no rescheduling path** (single-node bound pod, or pod without an owner reference) | Yes — pauses the software upgrade; No action for combined upgrade | For standard software upgrade: delete the pod, or apply the `infoscale.veritas.com/forceMigrate=true` annotation on the `InfoScaleCluster` CR. The upgrade resumes automatically once the condition is cleared. Note: pods without an owner reference are not recreated automatically after deletion. For combined upgrade, no action is required. |
+| Single-node bound Deployment / ReplicaSet / StatefulSet (not using InfoScale CSI) | No — informational | The workload will be unavailable while its current node is draining if no other node satisfies its scheduling constraints. Remove the single-node binding (nodeSelector/nodeAffinity) to allow rescheduling, or ensure another suitable node exists before the upgrade begins. |
+| Single-node bound Deployment / ReplicaSet / StatefulSet (using InfoScale CSI) | No — informational | The application will be unavailable while its node is being upgraded if no other node satisfies its scheduling constraints. This does not block the upgrade. If downtime is acceptable, no action is required. Otherwise, ensure another schedulable node is available before the upgrade begins. |
+| Single-node bound VM using InfoScale CSI | Yes | After removing the placement constraint and validating that the VM can migrate to another node |
+| HostPath-provisioned VM | Yes (OCP/combined upgrade) | After stopping the VM before the upgrade begins |
+| High-priority workload (PriorityClass higher than CSI DaemonSet) | Yes | After scaling down to 0 or lowering the PriorityClass below the InfoScale CSI node priority |
+
+### Pre-upgrade checklist
+
+Before proceeding, confirm each item:
+
+* No active split-brain condition
+* All diskgroups, disks, and volumes are healthy
+* No background VxVM sync tasks running
+* Fencing spec and status are consistent (shared / SCSI-3PR setups)
+* All InfoScale CSI-backed PVCs are bound
+* No pods in unexpected Pending / CrashLoopBackOff / ContainerCreating state
+* No Jobs using InfoScale CSI (standard upgrade) or Jobs removed/force-annotated (combined upgrade)
+* VMs with hot-plugged disks stopped before upgrade (software upgrade only — Kubevirt hot-plug attachment Jobs are reported as `ERROR: Job uses InfoScale CSI-backed PVC` by the script and will pause the software upgrade; stop the VM to clear them; no action required for combined upgrade)
+* No pods using InfoScale CSI that cannot be rescheduled (single-node bound or without owner reference) — deleted or force-annotated (standard upgrade); no action needed for combined upgrade
+* Single-node bound Deployments/ReplicaSets/StatefulSets reviewed; another schedulable node is available if downtime is not acceptable
+* No single-node bound InfoScale CSI VMs (or placement constraint removed and failover validated)
+* Applications with PriorityClass higher than InfoScale CSI are scaled down to 0 or reprioritized
+* HostPath-provisioned VMs stopped (OCP or combined upgrade)
+* If `mastersSchedulable`, ensure masters are not included in the InfoScale CR.
+* OCP update channel set to the required 4.x version (for OCP or combined upgrade)
+
+**If all items are confirmed:** Proceed with the upgrade.
+**If any critical item is unresolved:** Fix those issues first, then rerun preflight.
+
+### Rerun after fixes
+
+After fixing issues, run preflight again until all required rules pass:
+
+```
+./preflight-cli.sh --type upgrade --target-ike 9.2.1 --target-ocp 4.20.23 --all
+```
