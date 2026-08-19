@@ -49,7 +49,7 @@ cd preflight
 chmod +x preflight-cli.sh
 ```
 
-### Option 2 — Air-gapped / no internet access
+### Option 3 — Air-gapped / no internet access
 
 If the target machine has no internet access:
 
@@ -105,6 +105,16 @@ wget -q -O ./lib/data/upgrade_paths.json \
 **No internet access?** Download the file from an internet-connected machine and transfer it to `lib/data/upgrade_paths.json` before running the preflight check.
 
 > **Note:** The preflight CLI also refreshes this matrix automatically on startup from the same URL, and falls back to the bundled local `lib/data/upgrade_paths.json` if the download is unavailable.
+
+### Supported versions for IKE 9.2.1
+
+| Platform / Configuration | Version |
+| --- | --- |
+| OpenShift Container Platform (OCP) | 4.19.11, 4.19.16, 4.19.22, 4.19.23, 4.19.24, 4.19.25<br>4.20.3, 4.20.8, 4.20.10, 4.20.14, 4.20.15<br>4.20.20, 4.20.22, 4.20.23, 4.20.24<br>4.21.0, 4.21.2, 4.21.3, 4.21.8<br>4.21.11, 4.21.15, 4.21.16, 4.21.17 |
+| Kubernetes | 1.34.3 on RHEL 9.4 |
+| Red Hat Cert Manager | Cert Manager v1.18.0 or later for OCP 4.18.x, 4.19.x, 4.20.x, 4.21.x, 4.22.x |
+
+> **Note:** The preflight CLI evaluates OCP compatibility from `upgrade_paths.json` as version ranges (per OCP minor: a maximum supported patch plus explicit exceptions), so it may accept newer patch releases than those enumerated above. Always cross-check against the official InfoScale support matrix for the definitive qualified versions.
 
 ---
 
